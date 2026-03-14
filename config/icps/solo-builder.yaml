@@ -1,0 +1,61 @@
+id: solo-builder
+name: "The Solo Builder"
+description: >
+  Someone building products solo or in a small team. Uses AI heavily for coding,
+  writing, planning. Knows that better prompts = fewer debugging cycles.
+  Spends 2-5 hours per day in ChatGPT or Claude.
+
+demographics:
+  roles:
+    - "Indie developers / indie hackers"
+    - "Solo founders"
+    - "Freelance developers"
+    - "Creator-developers building in public"
+    - "Small team leads (2-3 person teams)"
+  ai_usage: "2-5 hours per day"
+  primary_tools:
+    - "ChatGPT"
+    - "Claude"
+    - "Cursor"
+  context: >
+    These are people who've integrated AI into their daily workflow. They're not
+    experimenting — they're dependent. They know AI can do more but feel like they're
+    leaving performance on the table with every prompt.
+
+psychographics:
+  pain_points:
+    - "Wastes time re-prompting and regenerating to get usable output"
+    - "Knows prompts matter but doesn't have time to master prompt engineering"
+    - "The same prompt works on one model but fails completely on another"
+    - "AI tools feel 80% there — the last 20% takes disproportionate effort"
+    - "Context-switching between chat interfaces and optimization tools breaks flow"
+    - "Has typed 'fix my code' at 2am and gotten back something useless"
+  motivations:
+    - "Ship faster without needing a team"
+    - "Get AI output right the first time — stay in flow state"
+    - "Minimize context-switching and tool-hopping"
+    - "Feel like they're using AI at its full capability, not 60%"
+  what_they_value:
+    - "Concrete results over theoretical frameworks"
+    - "Tools that save time, not create new learning curves"
+    - "Demonstrations and before/after proof"
+    - "Efficiency and staying in flow"
+
+content_preferences:
+  language_patterns:
+    - "Casual, developer-native language — 'ship', 'build', 'debug', 'iterate'"
+    - "Appreciates technical precision — don't oversimplify"
+    - "Responds to concrete before/after demonstrations"
+    - "Skeptical of marketing claims — trusts demonstrations over promises"
+    - "Self-deprecating humor about the AI struggle lands well"
+  hooks_that_resonate:
+    - "The 2am debugging session where nothing works"
+    - "The copy-paste-retry-regenerate loop"
+    - "Knowing the model CAN do it but not knowing how to ask"
+    - "The gap between what you meant and what you typed"
+    - "Spending 20 minutes on a prompt that should have taken 20 seconds"
+  formats_they_engage_with:
+    - "Before/after comparisons (strongest format)"
+    - "Checklists and frameworks they can save"
+    - "Quick tips they can apply immediately"
+    - "Real examples from actual use cases they recognize"

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__canva__get-design",
+      "mcp__canva__get-design-content",
+      "mcp__canva__get-design-pages",
+      "Bash(python3 scripts/generate_slides.py output/instagram/autopsy/2026-03-11_generate-ai-app-ideas.md 2>&1 | grep slide_07)",
+      "Bash(python3 scripts/generate_slides.py output/instagram/autopsy/2026-03-11_generate-ai-app-ideas.md 2>&1 | grep -E \"slide_0[23]\")"
+    ]
+  }
+}

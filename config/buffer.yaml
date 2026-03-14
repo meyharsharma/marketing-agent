@@ -1,0 +1,16 @@
+# Buffer Integration Config (Phase 2)
+# Fill in these values when Buffer API token is obtained
+# Docs: https://buffer.com/developers/api
+
+api:
+  token: ""  # Get from Buffer > Settings > API
+  base_url: "https://api.bufferapp.com/1"
+
+channels:
+  instagram:
+    profile_id: ""  # Buffer profile ID for Instagram account
+    templates_url: "https://publish.buffer.com/create/templates"
+
+# Phase 2 capabilities:
+# 1. Template fetching: GET templates from Buffer to discover new post formats
+# 2. Post scheduling: POST generated content as drafts to Buffer queue

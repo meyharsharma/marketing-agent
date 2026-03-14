@@ -1,0 +1,65 @@
+id: instagram
+name: Instagram
+
+categories:
+  autopsy:
+    name: "The Prompt Autopsy"
+    format: carousel_images
+    description: >
+      Take a real, bad prompt that most people would write naturally and dissect it
+      slide by slide. Show exactly why it fails, what the model "hears" vs. what the
+      user meant, and then show the optimized version. The key insight to communicate:
+      the failure isn't the model, it's the language mismatch.
+    prompt_template: "prompts/instagram/autopsy.md"
+    visual_style:
+      background: "Dark/black solid background"
+      text_color: "White primary text, accent colors for highlights and labels"
+      layout: "Each slide is a standalone image (1080x1080 or 1080x1350) with text overlaid on the dark background"
+      typography: "Clean, modern sans-serif. Headline text large and bold. Body text readable at mobile size."
+      notes: >
+        This is NOT a text post — each slide is an image file. Slide 1 text becomes image 1,
+        slide 2 text becomes image 2, etc. All images uploaded as an Instagram carousel.
+        Keep text per slide minimal enough to be readable on a phone screen.
+    constraints:
+      slides_min: 4
+      slides_max: 8
+      max_text_per_slide: "~40-60 words max per slide for readability on mobile"
+      caption_max_chars: 2200
+      hashtags_max: 30
+      hashtags_recommended: 15
+    why_it_works: >
+      Carousels have the highest save rate on Instagram. Solo builders will save these
+      as references. Saves signal to the algorithm that content is valuable, driving
+      organic reach. Each autopsy demonstrates the core product thesis — model-aware
+      optimization produces fundamentally different results — without feeling like an ad.
+
+  architecture:
+    name: "Prompt Architecture"
+    format: single_image
+    description: >
+      Clean, designed single-image posts breaking down the anatomy of a great prompt
+      for a specific use case — coding, writing, research, planning. Purely educational,
+      high-signal posts that position Prompt Optimizer as an authority.
+    prompt_template: "prompts/instagram/architecture.md"
+    visual_style:
+      background: "Dark/black solid background"
+      text_color: "White primary text, accent colors for sections and highlights"
+      layout: "Single image (1080x1080 or 1080x1350) with structured text layout — diagrams, checklists, or side-by-side columns"
+      typography: "Clean, modern sans-serif. Clear visual hierarchy between headline, section headers, and body."
+    constraints:
+      caption_max_chars: 2200
+      hashtags_max: 30
+      hashtags_recommended: 15
+    why_it_works: >
+      Positions Prompt Optimizer as an authority in prompt engineering, not just a tool.
+      Attracts organic followers who aren't ready to buy yet but will remember the brand
+      when they are.
+
+global_guidelines:
+  - "Instagram audiences scroll fast — the hook must land in the first line"
+  - "Carousels get the highest save rate — design autopsy posts to be saved as references"
+  - "Educational content outperforms promotional content for growth"
+  - "Design for saves and shares, not just likes"
+  - "All post images use dark/black backgrounds with white text — consistent brand aesthetic"
+  - "Keep text on slides concise — mobile-first, readable without zooming"
+  - "Each post should deliver standalone value even without visiting the product"

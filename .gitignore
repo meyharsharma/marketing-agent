@@ -1,0 +1,6 @@
+output/
+generated_slides/
+.env
+__pycache__/
+*.pyc
+.DS_Store

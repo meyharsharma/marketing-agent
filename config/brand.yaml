@@ -1,0 +1,67 @@
+company:
+  name: "Prompt Optimizer"
+  tagline: "The Last Prompt You'll Need to Rewrite"
+  manifesto: "Every Model Has a Language. We Speak All of Them."
+  description: >
+    ChatGPT thinks differently than Claude. Claude reasons differently than Gemini.
+    Most people treat them like the same tool with a different logo. They're not.
+    We wrote the dictionary. Now you have it.
+
+product:
+  summary: "Refines and optimizes raw prompts according to the specific AI model and chosen style"
+  supported_models:
+    - name: "ChatGPT"
+      native_extension: true
+    - name: "Gemini"
+      native_extension: true
+    - name: "Claude"
+      native_extension: true
+    - name: "Cursor"
+      native_extension: false
+    - name: "Claude Code"
+      native_extension: false
+  optimization_styles:
+    - "Detailed"
+    - "Step by Step"
+    - "Concise"
+  distribution:
+    - type: "Chrome Extension"
+      detail: "Works natively inside ChatGPT, Gemini, and Claude — no copy-pasting, no tab switching"
+    - type: "Web App"
+      detail: "Standalone web version supporting all 5 models"
+  core_thesis: "One-shot prompting — get the output right the first time, every time"
+
+differentiators:
+  - id: "model-aware"
+    name: "Model-Aware Optimization"
+    statement: "Optimizes for the specific model, not generically. A Claude prompt is architecturally different from a ChatGPT prompt."
+    contrast: "Most prompt tools optimize generically. They treat every model the same. That's technically wrong and produces mediocre results."
+    proof: "Show the same task optimized for Claude vs ChatGPT — the structural differences are immediately visible."
+
+  - id: "native-integration"
+    name: "Native Where Users Work"
+    statement: "Chrome extension lives inside ChatGPT, Gemini, and Claude. Zero context-switching."
+    contrast: "Competitors force users to leave their workflow, copy prompts to a separate tool, optimize, then paste back. That's friction, not a feature."
+    proof: "One click inside the chat interface. No new tabs. No copy-paste."
+
+positioning:
+  against: "The exhausting cycle of regenerate, tweak, regenerate"
+  for: "One-shot prompts that work the first time"
+  philosophy: "The failure isn't the model — it's the language mismatch between what you typed and what the model needed to hear"
+
+voice:
+  tone: "Confident, technical but accessible, slightly irreverent"
+  perspective: "We've been in the trenches. We know the frustration of the regenerate loop."
+  do:
+    - "Be specific and concrete — show, don't tell"
+    - "Use developer-native language when targeting devs"
+    - "Lead with insights, not product features"
+    - "Make the reader feel smart, not sold to"
+    - "Use short, punchy sentences for impact"
+  avoid:
+    - "Hype words: revolutionary, game-changing, unleash, supercharge, 10x"
+    - "Corporate jargon: leverage, synergy, ecosystem"
+    - "Talking down to the audience"
+    - "Being preachy about prompt engineering"
+    - "Generic AI excitement ('AI is changing everything!')"
+    - "Emojis in educational content (minimal use in captions only)"
