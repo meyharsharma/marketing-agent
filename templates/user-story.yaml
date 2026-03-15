@@ -1,0 +1,73 @@
+name: User Story
+description: Real user's experience solving a problem with Prompt Optimizer
+category: user-story
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1080
+
+slides:
+  - type: hook
+    name: "The Problem"
+    placeholders:
+      problem:
+        description: "The user's pain point in relatable language"
+        required: true
+        example: "20 minutes on one prompt."
+      hook_line:
+        description: "Hook line that creates empathy"
+        required: true
+        example: "The output was still wrong."
+
+  - type: old_way
+    name: "The Old Way"
+    placeholders:
+      heading:
+        description: "What they were doing before"
+        required: true
+        example: "THE REGENERATE LOOP"
+      body:
+        description: "Their old approach and the results they were getting"
+        required: true
+        example: "Typed 'fix my auth flow' into ChatGPT. Got generic boilerplate. Tweaked. Regenerated. Worse."
+
+  - type: the_switch
+    name: "The Switch"
+    placeholders:
+      heading:
+        description: "What changed"
+        required: true
+        example: "THE OPTIMIZED PROMPT"
+      body:
+        description: "The optimized prompt they used and which model"
+        required: true
+        source: user
+
+  - type: result
+    name: "The Result"
+    placeholders:
+      heading:
+        description: "The outcome"
+        required: true
+        example: "FIRST TRY."
+      body:
+        description: "What changed — time saved, quality difference, iterations eliminated"
+        required: true
+        example: "Working auth flow on the first generation. No regeneration. No tweaking."
+      quote:
+        description: "Optional direct quote from the user"
+        required: false
+        example: "I can't go back to prompting the old way."
+
+  - type: payoff
+    name: "The Takeaway"
+    placeholders:
+      heading:
+        description: "One-line insight from the experience"
+        required: true
+        example: "THE PROMPT WAS THE PROBLEM."
+      body:
+        description: "What the user does differently now"
+        required: false
+        example: "Every prompt gets optimized before it gets sent."

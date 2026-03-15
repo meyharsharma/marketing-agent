@@ -1,0 +1,189 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Prompt Autopsy — Carousel Base Styles
+   Brand: Prompt Optimizer (@PROMPTOPTIMIZR)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Font Stack ─────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Heading';
+  src: url('../../fonts/OpenSans-CondensedExtraBold.ttf') format('truetype');
+  font-weight: 800;
+}
+
+@font-face {
+  font-family: 'Body';
+  src: url('../../fonts/OpenSans_Condensed-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: 'BodyRegular';
+  src: url('../../fonts/OpenSans_Condensed-Medium.ttf') format('truetype');
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'Handle';
+  src: url('../../fonts/OpenSans_Condensed-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Design Tokens ──────────────────────────────────────────────── */
+
+:root {
+  --coral: #E93B04;
+  --black: #0A0A0A;
+  --cream: #FFF8F1;
+  --white: #FFFFFF;
+
+  --sidebar-w: 50px;
+  --slide-w: 1080px;
+  --slide-h: 1080px;
+
+  --pad-x: 70px;
+  --pad-y: 70px;
+  --content-w: calc(var(--slide-w) - var(--pad-x) - var(--sidebar-w) - 40px);
+}
+
+body {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Slide Container ────────────────────────────────────────────── */
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--pad-y) var(--pad-x);
+  padding-right: calc(var(--sidebar-w) + 50px);
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+
+.sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--sidebar-w);
+  height: 100%;
+  z-index: 10;
+}
+
+/* ── Handle (@PROMPTOPTIMIZR) ───────────────────────────────────── */
+
+.handle {
+  position: absolute;
+  font-family: 'Handle', 'Arial', sans-serif;
+  font-size: 19px;
+  letter-spacing: 0.8px;
+  z-index: 20;
+}
+
+.handle--top-right {
+  top: var(--pad-y);
+  right: calc(var(--sidebar-w) + 30px);
+}
+
+.handle--bottom-right {
+  bottom: 40px;
+  right: calc(var(--sidebar-w) + 30px);
+}
+
+/* ── Arrow Icons ────────────────────────────────────────────────── */
+
+.arrow {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  z-index: 20;
+}
+
+.arrow img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arrow--center-right {
+  right: calc(var(--sidebar-w) + 40px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrow--bottom-right {
+  right: calc(var(--sidebar-w) + 40px);
+  bottom: 50px;
+}
+
+/* ── Bookmark Icon ──────────────────────────────────────────────── */
+
+.bookmark {
+  position: absolute;
+  right: calc(var(--sidebar-w) + 50px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100px;
+  height: 100px;
+  background: var(--cream);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.bookmark__shape {
+  width: 38px;
+  height: 52px;
+  background: var(--black);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
+}
+
+/* ── Typography ─────────────────────────────────────────────────── */
+
+.t-heading {
+  font-family: 'Heading', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  line-height: 0.95;
+  letter-spacing: -1px;
+}
+
+.t-body {
+  font-family: 'Body', 'Arial', sans-serif;
+  line-height: 1.45;
+  letter-spacing: 0.2px;
+}
+
+.t-body-regular {
+  font-family: 'BodyRegular', 'Arial', sans-serif;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+}
+
+/* ── Slide Number Indicator (optional, for multi-slide awareness) ── */
+
+.slide-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: var(--pad-x);
+  font-family: 'Handle', 'Arial', sans-serif;
+  font-size: 14px;
+  opacity: 0.4;
+  letter-spacing: 2px;
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide {
+      background: var(--cream);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-left: 70px;
+      padding-right: calc(var(--sidebar-w) + 60px);
+    }
+    .sidebar { background: var(--coral); }
+
+    .heading {
+      font-size: 100px;
+      color: var(--coral);
+      max-width: var(--content-w);
+      margin-bottom: 40px;
+    }
+
+    .body {
+      font-size: 40px;
+      color: var(--black);
+      max-width: var(--content-w);
+    }
+
+    .handle { color: var(--black); }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="sidebar"></div>
+
+    <h2 class="t-heading heading">{{heading}}</h2>
+    <p class="t-body body">{{body}}</p>
+
+    <div class="handle handle--bottom-right">@PROMPTOPTIMIZR</div>
+  </div>
+</body>
+</html>

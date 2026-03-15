@@ -1,0 +1,29 @@
+name: Prompt Infographic
+description: Dense reference image — cheat sheets, comparisons, frameworks
+category: infographic
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1350
+
+slides:
+  - type: infographic
+    name: "The Infographic"
+    placeholders:
+      title:
+        description: "Infographic title — clear, specific, save-worthy"
+        required: true
+        example: "The One-Shot Prompt Checklist"
+      subtitle:
+        description: "Optional subtitle or context line"
+        required: false
+        example: "5 things every prompt needs before you hit enter"
+      content:
+        description: "The structured body content — numbered lists, bullet points, comparison columns, or framework sections. Use markdown formatting."
+        required: true
+        example: "1. **Role Frame** — Tell the model who it is\n2. **Context** — Give it the background..."
+      source:
+        description: "Optional source attribution (NotebookLM, model docs, etc.)"
+        required: false
+        example: "Source: Anthropic Claude documentation"

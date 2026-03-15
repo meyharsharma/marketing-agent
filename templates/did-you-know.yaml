@@ -1,0 +1,21 @@
+name: Did You Know
+description: Surprising fact about AI model behavior
+category: did-you-know
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1080
+
+slides:
+  - type: fact
+    name: "The Fact"
+    placeholders:
+      fact:
+        description: "The surprising fact — one punchy sentence, under 15 words"
+        required: true
+        example: "GPT-5 prioritizes the LAST instruction, not the first."
+      explanation:
+        description: "One sentence explaining why this matters"
+        required: true
+        example: "Most people put constraints at the top. GPT reads them at the bottom."

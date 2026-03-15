@@ -1,0 +1,90 @@
+# Prompt Autopsy — Carousel Template Definition
+#
+# This file declares the slide structure and placeholders for autopsy carousels.
+# The renderer (scripts/render_carousel.py) reads this template + a content file
+# and produces one PNG per slide.
+#
+# To create a new carousel type, copy this file and modify the slides list.
+
+name: Prompt Autopsy
+description: Dissects a bad prompt, shows why it fails, and reveals the optimized version
+category: autopsy
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1080
+
+style:
+  colors:
+    coral: "#E93B04"
+    black: "#000000"
+    cream: "#FFF8F1"
+    white: "#FFFFFF"
+  handle: "@PROMPTOPTIMIZR"
+  sidebar_width: 50
+  font: OpenSans-CondensedExtraBold.ttf
+  font_fallback: OpenSans-CondensedBold.ttf
+
+# Slides define the carousel sequence.
+# Each slide has a type (maps to a rendering layout), and placeholders
+# that the AI or user fills in via a content YAML file.
+#
+# Slide types: hook, model_hears, dissection, optimized, payoff
+# Dissection slides can repeat (use dissection_1, dissection_2, etc. in content)
+
+slides:
+  - type: hook
+    name: "The Hook"
+    placeholders:
+      prompt_text:
+        description: "The bad prompt to display (exactly as someone would type it)"
+        required: true
+        example: "fix my code"
+      hook_line:
+        description: "Curiosity-driving line below the prompt"
+        required: true
+        example: "This prompt wastes 90% of the model's capability."
+
+  - type: model_hears
+    name: "What the Model Hears"
+    placeholders:
+      content:
+        description: "What the model interprets vs. what was meant — highlight the ambiguities"
+        required: true
+        example: "You said 'fix my code.' The model heard: 'Do something to some code somewhere, somehow.'"
+
+  - type: dissection
+    name: "Dissection"
+    repeat: true        # generates 2-4 slides, one per failure pattern
+    min_count: 2
+    max_count: 4
+    placeholders:
+      title:
+        description: "Failure pattern name — should feel like a diagnostic label"
+        required: true
+        example: "Missing Role Frame"
+      body:
+        description: "1-2 sentences on why this gap degrades output"
+        required: true
+        example: "Without a role, the model defaults to 'generic assistant.' You get Wikipedia, not engineering advice."
+
+  - type: optimized
+    name: "The Optimized Version"
+    placeholders:
+      prompt:
+        description: "The optimized prompt — provided by the user from Prompt Optimizer"
+        required: true
+        source: user     # indicates this comes from user input, not AI generation
+
+  - type: payoff
+    name: "The Payoff Line"
+    placeholders:
+      heading:
+        description: "A memorable closing insight that reframes the lesson"
+        required: true
+        example: "The model isn't bad at debugging. It just didn't know what broke."
+      body:
+        description: "Optional supporting text or CTA"
+        required: false
+        example: "Try Prompt Optimizer — link in bio"

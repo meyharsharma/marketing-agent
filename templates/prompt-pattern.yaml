@@ -1,0 +1,61 @@
+name: Prompt Pattern
+description: Teaches one reusable prompting technique with numbered steps
+category: prompt-pattern
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1080
+
+style:
+  colors:
+    charcoal: "#2D2B28"
+    cream: "#E8DED0"
+    white: "#FFFFFF"
+  handle: "@PROMPTOPTIMIZR"
+  font: OpenSans_Condensed-Light.ttf
+  font_medium: OpenSans_Condensed-Regular.ttf
+
+slides:
+  - type: hook
+    name: "The Hook"
+    placeholders:
+      hook_line:
+        description: "Hook text — curiosity-driving line about the pattern"
+        required: true
+        example: "You're putting the most important instruction in the wrong place."
+
+  - type: technique
+    name: "Pattern Step"
+    repeat: true
+    min_count: 2
+    max_count: 4
+    placeholders:
+      number:
+        description: "Step number formatted as 01, 02, 03, etc."
+        required: true
+        example: "01"
+      heading:
+        description: "The pattern/technique name or key point"
+        required: true
+        example: "End-position your constraints"
+      body:
+        description: "One-line explanation or example"
+        required: false
+        example: "GPT-5 weights the last instruction heaviest."
+      variant:
+        description: "Visual variant (1, 2, or 3) — changes dashed line angle and circle position"
+        required: false
+        auto: "cycles through 1, 2, 3"
+
+  - type: payoff
+    name: "Closing"
+    placeholders:
+      heading:
+        description: "Closing/takeaway line"
+        required: true
+        example: "Structure beats length. Every time."
+      body:
+        description: "CTA or product mention"
+        required: false
+        example: "Try Prompt Optimizer — link in bio"

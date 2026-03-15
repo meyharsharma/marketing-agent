@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide {
+      background: var(--cream);
+      padding-top: 100px;
+      gap: 0;
+    }
+    .sidebar { background: var(--coral); }
+
+    .heading {
+      font-size: 100px;
+      color: var(--coral);
+      margin-bottom: 80px;
+      max-width: 650px;
+    }
+
+    .body {
+      font-size: 40px;
+      color: var(--black);
+      max-width: var(--content-w);
+    }
+
+    .handle { color: var(--black); }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="sidebar"></div>
+
+    <div class="handle handle--top-right">@PROMPTOPTIMIZR</div>
+
+    <h2 class="t-heading heading">WHAT IT HEARD</h2>
+    <p class="t-body body">{{content}}</p>
+
+    <div class="arrow arrow--bottom-right">
+      <img src="../../arrow2.png">
+    </div>
+  </div>
+</body>
+</html>

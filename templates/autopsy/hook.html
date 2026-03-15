@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide {
+      background: var(--coral);
+      padding: 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+    .sidebar { background: var(--cream); }
+
+    /* ── Top section: bad prompt ── */
+    .hook-top {
+      padding: 60px 70px 0 70px;
+      padding-right: calc(var(--sidebar-w) + 50px);
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .prompt-display {
+      font-family: 'Heading', 'Arial Black', sans-serif;
+      font-size: 148px;
+      line-height: 0.92;
+      text-transform: uppercase;
+      color: var(--black);
+      letter-spacing: -3px;
+      max-width: 750px;
+      word-break: break-word;
+    }
+
+    /* ── Bottom section: hook line ── */
+    .hook-bottom {
+      padding: 0 70px 60px 70px;
+      padding-right: calc(var(--sidebar-w) + 50px);
+    }
+
+    .hook-line {
+      font-family: 'Heading', 'Arial Black', sans-serif;
+      font-size: 72px;
+      line-height: 0.95;
+      text-transform: uppercase;
+      color: var(--white);
+      max-width: 680px;
+      letter-spacing: -1px;
+    }
+
+    .handle { color: var(--black); }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="sidebar"></div>
+
+    <div class="hook-top">
+      <div class="prompt-display">{{prompt_text}}</div>
+    </div>
+
+    <div class="hook-bottom">
+      <div class="hook-line">{{hook_line}}</div>
+    </div>
+
+    <div class="arrow arrow--center-right">
+      <img src="../../arrow1.png">
+    </div>
+    <div class="handle handle--bottom-right" style="color: var(--black);">@PROMPTOPTIMIZR</div>
+  </div>
+
+  <script>
+    // Auto-scale prompt if it overflows
+    const el = document.querySelector('.prompt-display');
+    const container = document.querySelector('.hook-top');
+    let size = 148;
+    while (el.scrollHeight > container.clientHeight && size > 80) {
+      size -= 4;
+      el.style.fontSize = size + 'px';
+    }
+  </script>
+</body>
+</html>

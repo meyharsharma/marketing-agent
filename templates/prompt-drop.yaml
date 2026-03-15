@@ -1,0 +1,25 @@
+name: Daily Prompt Drop
+description: One ready-to-use prompt template optimized for a specific model
+category: prompt-drop
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1080
+
+slides:
+  - type: prompt
+    name: "The Prompt"
+    placeholders:
+      task_name:
+        description: "What task this prompt solves (short label)"
+        required: true
+        example: "REST API Endpoint"
+      target_model:
+        description: "Which AI model this is optimized for"
+        required: true
+        example: "ChatGPT"
+      prompt_text:
+        description: "The actual prompt — complete, copy-paste ready, model-specific formatting"
+        required: true
+        example: "You are a senior backend developer. Build a REST endpoint for [resource]..."

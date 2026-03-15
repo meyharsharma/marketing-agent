@@ -1,0 +1,29 @@
+# Sample content for the autopsy carousel template.
+# This shows the format the AI generates — just fill in the placeholders.
+
+hook:
+  prompt_text: "fix my code"
+  hook_line: "This prompt wastes 90% of the model's capability."
+
+model_hears:
+  content: "You said 'fix my code.' The model heard: 'Do something to some code somewhere, for some reason, in some way.'"
+
+# Dissection slides — use numbered keys for repeatable slides
+dissection_1:
+  title: "Missing Role Frame"
+  body: "Without a role, the model defaults to 'generic assistant.' You get Wikipedia answers, not engineering advice."
+
+dissection_2:
+  title: "No Error Context"
+  body: "The model can't see your screen. 'Fix my code' without the error message is like calling a mechanic and saying 'my car is broken.'"
+
+dissection_3:
+  title: "Zero Constraints"
+  body: "No language specified. No framework. No version. The model has to guess every technical decision you've already made."
+
+optimized:
+  prompt: "You are a senior Python developer debugging a FastAPI application.\n\nHere is my code:\n[paste code]\n\nHere is the error:\n[paste error]\n\nPlease:\n1. Identify the root cause\n2. Explain why this error occurs\n3. Provide the corrected code\n4. Suggest how to prevent this in the future"
+
+payoff:
+  heading: "The model isn't bad at debugging."
+  body: "It just didn't know what broke."
