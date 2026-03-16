@@ -120,18 +120,26 @@ categories:
     prompt_template: "prompts/instagram/infographic.md"
     carousel_template: "templates/infographic/"
     notebooklm_integration:
-      description: >
-        Use NotebookLM as the research backbone. Feed in model docs, prompt engineering
-        papers, and PO's own model guides. Query for insights, then format into infographic.
+      notebook_id: "57639ed8-99e9-47c0-b82d-6d9443f88b51"
+      notebook_name: "Prompt Optimizer Research"
+      generation:
+        orientation: square
+        default_detail: detailed
+        style_by_type:
+          cheat_sheet: professional
+          comparison: editorial
+          framework: instructional
+          data_insight: editorial
       sources:
         - "Prompt Optimizer model-specific guides (from codebase)"
         - "OpenAI, Anthropic, Google model documentation"
         - "Prompt engineering research and community benchmarks"
       workflow: >
-        1. Query NotebookLM for factual content on the topic
-        2. Extract key insights, comparisons, or data points
-        3. Format into infographic template with brand voice
-        4. Render via carousel editor
+        1. Set notebook context: notebooklm use <notebook_id>
+        2. Research topic: notebooklm ask "<research question>" --json
+        3. Generate infographic: notebooklm generate infographic --orientation portrait --detail detailed --style <style>
+        4. Wait for completion: notebooklm artifact wait <artifact_id>
+        5. Download: notebooklm download infographic <output_path>
     visual_style:
       background: "Black (#0A0A0A)"
       text_color: "White body, coral accents and headers"
