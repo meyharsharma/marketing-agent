@@ -67,7 +67,7 @@ If a file with the same name already exists, append a number: `fix-my-code-2.md`
 
 ### 6. Generate Slide Images
 
-After writing the markdown file, generate slide PNGs using the **template-driven renderer**:
+**For carousels** (autopsy, prompt-pattern, did-you-know, user-story), generate PNGs using the **template-driven renderer**:
 
 ```
 python3 scripts/render_carousel.py templates/{category}.yaml content.yaml [slug]
@@ -78,6 +78,27 @@ This uses HTML/CSS templates (rendered via Playwright) for high-quality typograp
 **Content can be provided two ways:**
 - **YAML content file**: A YAML with placeholder values per slide (see `templates/autopsy/sample_content.yaml` for the format)
 - **Markdown post file**: The standard output markdown — the renderer auto-extracts slide content
+
+**For infographics**, use NotebookLM native generation (do NOT use render_carousel.py):
+
+```bash
+# 1. Set notebook context
+notebooklm use <notebook_id>  # from config/platforms/instagram.yaml → notebooklm_integration.notebook_id
+
+# 2. Research the topic
+notebooklm ask "<research question>" --json
+
+# 3. Generate the infographic image
+notebooklm generate infographic --orientation square --detail detailed --style <style> --json
+
+# 4. Wait for completion
+notebooklm artifact wait <artifact_id>
+
+# 5. Download
+notebooklm download infographic generated_slides/<slug>/infographic.png
+```
+
+Style is chosen by infographic type (see `config/platforms/instagram.yaml` → `notebooklm_integration.generation.style_by_type`).
 
 **Legacy renderer** (Pillow-based, still available):
 ```
@@ -132,7 +153,7 @@ status: draft
 4. **ICP targeting.** Content must speak to the specific ICP's pain points and language patterns. Don't write generic content.
 5. **Product mentions are minimal.** Most content is educational. Product branding is subtle — typically only on the final slide or as a small CTA.
 6. **For autopsy posts: the optimized prompt comes from the user.** Never generate the optimized prompt yourself — always pause and ask the user to provide it from Prompt Optimizer. Use it exactly as given.
-7. **For infographics: use NotebookLM as the research backbone.** Query NotebookLM for factual, research-backed content before generating. See `prompts/instagram/infographic.md` for the integration workflow.
+7. **For infographics: fully automated via NotebookLM.** Present 3 topic ideas → user picks one → research via `notebooklm ask` → write caption (hook + one deep paragraph + CTA + hashtags) → generate image via `notebooklm generate infographic` → download PNG → save everything. See `prompts/instagram/infographic.md` for the full workflow.
 8. **For user stories: never fabricate testimonials.** All stories must come from real user experiences provided by the user.
 
 ## Carousel Template System
@@ -149,7 +170,7 @@ Templates are defined in `templates/`. Each template has:
 | Did You Know | `templates/did-you-know/` | No | YAML only |
 | Daily Prompt Drop | `templates/prompt-drop/` | No | YAML only |
 | Prompt Pattern | `templates/prompt-pattern/` | No | YAML only |
-| Prompt Infographic | `templates/infographic/` | No | YAML only |
+| Prompt Infographic | `templates/infographic/` | N/A — uses NotebookLM generation | Ready |
 | User Story | `templates/user-story/` | No | YAML only |
 
 ### Template YAML Structure
@@ -175,11 +196,21 @@ dissection_1:
 
 ## NotebookLM Integration (Infographics)
 
-Infographic content is research-backed via NotebookLM:
-1. Maintain a NotebookLM notebook with prompt engineering sources (model docs, PO guides, research)
-2. Query NotebookLM for factual content on the infographic topic
-3. Format the output into the infographic template with brand voice
-4. See `prompts/instagram/infographic.md` for the full workflow
+Infographics are fully powered by NotebookLM via the `notebooklm-py` CLI (already installed and authenticated).
+
+**Notebook:** "Prompt Optimizer Research" (`57639ed8-99e9-47c0-b82d-6d9443f88b51`)
+**Sources:** Anthropic, OpenAI, Google prompting docs + prompt engineering research
+
+**Automated workflow:**
+1. `notebooklm use 57639ed8-99e9-47c0-b82d-6d9443f88b51` — set context
+2. `notebooklm ask "<research question>" --json` — get factual content with citations
+3. Write caption: hook + one deep paragraph + CTA + 15 hashtags
+4. `notebooklm generate infographic --orientation square --detail detailed --style <style> --json` — generate image
+5. `notebooklm artifact wait <artifact_id>` — wait for completion (5-15 min)
+6. `notebooklm download infographic generated_slides/<slug>/infographic.png` — download
+7. Save markdown to `output/instagram/infographic/{date}_{slug}.md`
+
+See `prompts/instagram/infographic.md` for the full prompt template and quality rules.
 
 ## Buffer Integration (Phase 2)
 
