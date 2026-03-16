@@ -1,0 +1,5 @@
+fact_a:
+  fact: "ChatGPT reads your system prompt LAST, not first. That's why your most important rules keep getting ignored."
+
+fact_b:
+  fact: "Claude was trained on XML-structured data. Wrapping instructions in XML tags boosts output accuracy by up to 40%."

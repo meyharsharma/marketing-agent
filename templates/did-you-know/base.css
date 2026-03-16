@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Did You Know — Base Styles
+   Brand: Prompt Optimizer (@PROMPTOPTIMIZER)
+   ═══════════════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'MontserratEB';
+  src: url('../../fonts/Montserrat-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+}
+
+@font-face {
+  font-family: 'MontserratReg';
+  src: url('../../fonts/Montserrat-Regular.ttf') format('truetype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'MontserratLight';
+  src: url('../../fonts/Montserrat-Light.ttf') format('truetype');
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: 'Anton';
+  src: url('../../fonts/Anton.ttf') format('truetype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Handle';
+  src: url('../../fonts/OpenSans_Condensed-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --coral: #E93B04;
+  --black: #0A0A0A;
+  --white: #FFFFFF;
+  --charcoal: #2D2D2D;
+  --slide-w: 1080px;
+  --slide-h: 1080px;
+}
+
+body {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.fact-text {
+  position: absolute;
+  line-height: 1.5;
+}
+
+.handle {
+  position: absolute;
+  font-family: 'Handle', 'Arial', sans-serif;
+  letter-spacing: 0.8px;
+  font-size: 19px;
+}

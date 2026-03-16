@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    Prompt Autopsy — Carousel Base Styles
-   Brand: Prompt Optimizer (@PROMPTOPTIMIZR)
+   Brand: Prompt Optimizer (@PROMPTOPTIMIZER)
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Font Stack ─────────────────────────────────────────────────── */
@@ -85,7 +85,7 @@ body {
   z-index: 10;
 }
 
-/* ── Handle (@PROMPTOPTIMIZR) ───────────────────────────────────── */
+/* ── Handle (@PROMPTOPTIMIZER) ───────────────────────────────────── */
 
 .handle {
   position: absolute;

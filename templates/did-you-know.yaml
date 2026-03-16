@@ -1,5 +1,11 @@
+# Did You Know — Single Image Template Definition
+#
+# Two rotating visual templates:
+#   fact_a: Phone mockup (black bg, Montserrat ExtraBold heading, Regular fact)
+#   fact_b: Character illustration (charcoal bg, Anton heading, Montserrat Regular fact)
+
 name: Did You Know
-description: Surprising fact about AI model behavior
+description: Surprising AI/prompting fact — single image, two rotating designs
 category: did-you-know
 platform: instagram
 
@@ -7,15 +13,27 @@ dimensions:
   width: 1080
   height: 1080
 
+style:
+  colors:
+    black: "#000000"
+    charcoal: "#2D2D2D"
+    white: "#FFFFFF"
+    coral: "#E93B04"
+  handle: "@PROMPTOPTIMIZER"
+
 slides:
-  - type: fact
-    name: "The Fact"
+  - type: fact_a
+    name: "Did You Know — Phone Mockup"
     placeholders:
       fact:
-        description: "The surprising fact — one punchy sentence, under 15 words"
+        description: "The surprising fact — 1-2 sentences, under 30 words"
         required: true
-        example: "GPT-5 prioritizes the LAST instruction, not the first."
-      explanation:
-        description: "One sentence explaining why this matters"
+        example: "GPT-4 weights the last instruction 3x more than the first. Put your most important constraint at the end."
+
+  - type: fact_b
+    name: "Did You Know — Character"
+    placeholders:
+      fact:
+        description: "The surprising fact — 1-2 sentences, under 30 words"
         required: true
-        example: "Most people put constraints at the top. GPT reads them at the bottom."
+        example: "Claude performs 40% better with XML tags. It's not just formatting — Claude's training data is structured around it."

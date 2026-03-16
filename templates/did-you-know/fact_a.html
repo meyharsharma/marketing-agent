@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide {
+      background-image: url('bg_phone.png');
+    }
+
+    .fact-text {
+      font-family: 'MontserratReg', 'Arial', sans-serif;
+      color: var(--white);
+      font-size: 34px;
+      text-align: center;
+      top: 58%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 480px;
+      line-height: 1.6;
+    }
+
+    .handle {
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--black);
+      background: var(--white);
+      padding: 8px 20px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="fact-text">{{fact}}</div>
+    <div class="handle">@PROMPTOPTIMIZER</div>
+  </div>
+</body>
+</html>

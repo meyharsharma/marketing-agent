@@ -12,7 +12,7 @@ style:
     charcoal: "#2D2B28"
     cream: "#E8DED0"
     white: "#FFFFFF"
-  handle: "@PROMPTOPTIMIZR"
+  handle: "@PROMPTOPTIMIZER"
   font: OpenSans_Condensed-Light.ttf
   font_medium: OpenSans_Condensed-Regular.ttf
 
