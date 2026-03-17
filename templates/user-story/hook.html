@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    /* Slide 1 — The Problem (Hook)
+       Large centered notebook with slight counter-clockwise tilt.
+       Hook title inside the notebook, also tilted to match. */
+
+    .notebook {
+      width: 700px;
+      height: 780px;
+      top: 48%;
+      left: 48%;
+      transform: translate(-50%, -50%) rotate(-3deg);
+    }
+
+    .notebook__content {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hook-title {
+      font-family: 'PaytoneOne', sans-serif;
+      font-size: 118px;
+      color: var(--black);
+      line-height: 1.0;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    /* Star positions */
+    .star-1 { top: 140px; left: 60px; }
+    .star-2 { bottom: 100px; right: 60px; }
+
+    /* Pill — right edge, vertically centered */
+    .pill {
+      right: -55px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="brand-top">Prompt Optimizer</div>
+
+    <div class="notebook">
+      <div class="notebook__shadow"></div>
+      <div class="notebook__body">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;" viewBox="0 0 700 780">
+          <rect x="14" y="14" width="672" height="752" rx="24" ry="24"
+                fill="none" stroke="#FF3131" stroke-width="4" stroke-dasharray="28 14"/>
+        </svg>
+        <div class="notebook__content">
+          <div class="hook-title">{{problem}}</div>
+        </div>
+      </div>
+      <div class="spiral-top">
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+      </div>
+    </div>
+
+    <div class="star-4 star-1"></div>
+    <div class="star-4 star-2"></div>
+
+    <div class="pill"></div>
+
+    <div class="handle-bottom">@promptoptimizer</div>
+  </div>
+
+  <script>
+    // Auto-scale hook title if it overflows
+    const el = document.querySelector('.hook-title');
+    const container = document.querySelector('.notebook__content');
+    let size = 118;
+    while (el.scrollHeight > container.clientHeight && size > 50) {
+      size -= 4;
+      el.style.fontSize = size + 'px';
+    }
+  </script>
+</body>
+</html>

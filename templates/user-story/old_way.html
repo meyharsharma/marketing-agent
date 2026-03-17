@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    /* Slide 2 — The Old Way
+       Heading slightly tilted at top, landscape notebook lower down */
+
+    .heading {
+      position: absolute;
+      top: 260px;
+      left: 80px;
+      font-size: 100px;
+      font-family: 'PaytoneOne', sans-serif;
+      transform: rotate(-2deg);
+      text-transform: none;
+      z-index: 10;
+    }
+
+    .notebook {
+      width: 680px;
+      height: 380px;
+      top: 560px;
+      left: 50%;
+      transform: translateX(-46%) rotate(-2deg);
+    }
+
+    .notebook__content {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .body-text {
+      font-size: 34px;
+      text-align: center;
+      padding: 10px;
+      font-family: 'PaytoneOne', sans-serif;
+    }
+
+    /* Star positions matching reference */
+    .star-1 { bottom: 200px; left: 100px; }
+    .star-2 { top: 480px; right: 65px; }
+
+    /* Arrow — left edge, partially off-screen, aligned with notebook */
+    .arrow-icon {
+      left: -18px;
+      top: 510px;
+      width: 75px;
+      height: 75px;
+    }
+
+    /* Pill — top right edge */
+    .pill {
+      right: -55px;
+      top: 140px;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="brand-top">Prompt Optimizer</div>
+
+    <h2 class="heading">{{heading}}</h2>
+
+    <div class="notebook">
+      <div class="notebook__shadow"></div>
+      <div class="notebook__body">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;" viewBox="0 0 680 380">
+          <rect x="14" y="14" width="652" height="352" rx="18" ry="18"
+                fill="none" stroke="#FF3131" stroke-width="4" stroke-dasharray="28 14"/>
+        </svg>
+        <div class="notebook__content">
+          <p class="body-text">{{body}}</p>
+        </div>
+      </div>
+      <div class="spiral-top">
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+        <div class="pin"><div class="pin__line"></div><div class="pin__dot"></div></div>
+      </div>
+    </div>
+
+    <div class="star-4 star-1"></div>
+    <div class="star-4 star-2"></div>
+
+    <div class="arrow-icon">
+      <svg viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="69" height="69" rx="18" stroke="#0A0A0A" stroke-width="5" fill="none"/>
+        <path d="M28 22L48 37.5L28 53" stroke="#0A0A0A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="pill"></div>
+
+    <div class="handle-bottom">@promptoptimizer</div>
+  </div>
+
+  <script>
+    const el = document.querySelector('.body-text');
+    const container = document.querySelector('.notebook__content');
+    let size = 34;
+    while (el.scrollHeight > container.clientHeight && size > 20) {
+      size -= 1;
+      el.style.fontSize = size + 'px';
+    }
+  </script>
+</body>
+</html>

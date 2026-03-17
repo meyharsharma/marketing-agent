@@ -5,7 +5,7 @@ platform: instagram
 
 dimensions:
   width: 1080
-  height: 1080
+  height: 1350
 
 slides:
   - type: hook
@@ -71,3 +71,19 @@ slides:
         description: "What the user does differently now"
         required: false
         example: "Every prompt gets optimized before it gets sent."
+
+  - type: cta
+    name: "CTA"
+    placeholders:
+      cta_headline:
+        description: "Main CTA headline"
+        required: true
+        example: "Try it for Free"
+      cta_url:
+        description: "Website URL (displayed smaller)"
+        required: true
+        example: "promptoptimizer.com"
+      cta_sub:
+        description: "Sub-text below the URL"
+        required: false
+        example: "link in bio"

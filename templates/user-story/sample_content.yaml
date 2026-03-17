@@ -1,0 +1,28 @@
+# Sample content for the user story carousel template.
+# Fill in the placeholders to generate a new post.
+
+hook:
+  problem: "I almost gave up on AI coding."
+  hook_line: "Then I changed one thing."
+
+old_way:
+  heading: "What I Was Doing"
+  body: "I kept typing 'fix my auth flow' and hitting enter. Copy-pasting the same vague prompt over and over. Each time the output got worse, not better."
+
+the_switch:
+  heading: "What I Changed"
+  body: "I ran my prompt through Prompt Optimizer. It added role context, error details, and output constraints I never thought to include. Same task. Completely different prompt."
+
+result:
+  heading: "Night And Day."
+  body: "First response back was clean, working code. No regenerating. No 'that's not what I meant.' Just done."
+  quote: "\"Honestly felt like I'd been using AI wrong this whole time.\""
+
+payoff:
+  heading: "It Wasn't The Model."
+  body: "The AI could always do it. I just wasn't asking the right way. Now I optimize every prompt before I send it."
+
+cta:
+  cta_headline: "Try it for Free"
+  cta_url: "promptoptimizer.com"
+  cta_sub: "link in bio"
