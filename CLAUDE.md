@@ -105,6 +105,28 @@ Style is chosen by infographic type (see `config/platforms/instagram.yaml` → `
 python3 scripts/generate_slides.py output/{platform}/{category}/{filename}.md
 ```
 
+### 7. Schedule to Buffer (Optional)
+After generating, ask the user: "Would you like to schedule this to Buffer? If so, what day and time?"
+
+If yes:
+```bash
+python3 scripts/schedule_post.py output/{platform}/{category}/{filename}.md --schedule "YYYY-MM-DD HH:MM"
+```
+
+Other modes:
+```bash
+python3 scripts/schedule_post.py <file> --draft    # Add as draft
+python3 scripts/schedule_post.py <file> --now       # Post immediately
+```
+
+The script automatically:
+- Extracts caption + hashtags from the markdown
+- Finds and uploads images from `generated_slides/{slug}/` to Imgur
+- Creates the Buffer update with media attached (supports carousels)
+- Updates the markdown frontmatter with `status: scheduled` and `buffer_id`
+
+Requires `BUFFER_ACCESS_TOKEN` and `IMGUR_CLIENT_ID` in `.env`.
+
 ## Output Markdown Format
 
 Every generated post MUST use this frontmatter + section structure:
@@ -212,13 +234,18 @@ Infographics are fully powered by NotebookLM via the `notebooklm-py` CLI (alread
 
 See `prompts/instagram/infographic.md` for the full prompt template and quality rules.
 
-## Buffer Integration (Phase 2)
+## Buffer Integration
 
-Currently, generated posts are saved as markdown files for manual review and upload to Buffer.
+Posts can be scheduled directly to Buffer after generation.
 
-When Buffer API token is configured in `config/buffer.yaml`:
-- **Template fetching**: Pull Buffer templates to discover new post formats
-- **Scheduling**: Push generated content directly to Buffer as draft posts
+**Setup:**
+1. Add `BUFFER_ACCESS_TOKEN` to `.env` (from buffer.com/developers/api)
+2. Add `IMGUR_CLIENT_ID` to `.env` (from api.imgur.com, for image hosting)
+3. Instagram profile ID auto-discovers on first run, or set manually in `config/buffer.yaml`
+
+**Usage:** `python3 scripts/schedule_post.py <markdown_file> --schedule "YYYY-MM-DD HH:MM"`
+
+See `config/buffer.yaml` for category type mappings (single_image vs carousel) and scheduling defaults.
 
 ## Adding New Content
 

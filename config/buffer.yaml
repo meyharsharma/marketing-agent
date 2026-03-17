@@ -1,16 +1,21 @@
-# Buffer Integration Config (Phase 2)
-# Fill in these values when Buffer API token is obtained
+# Buffer Integration Config
 # Docs: https://buffer.com/developers/api
+# Set BUFFER_ACCESS_TOKEN in .env
 
 api:
-  token: ""  # Get from Buffer > Settings > API
   base_url: "https://api.bufferapp.com/1"
 
 channels:
   instagram:
-    profile_id: ""  # Buffer profile ID for Instagram account
-    templates_url: "https://publish.buffer.com/create/templates"
+    profile_id: ""  # Auto-filled on first run via GET /profiles.json
 
-# Phase 2 capabilities:
-# 1. Template fetching: GET templates from Buffer to discover new post formats
-# 2. Post scheduling: POST generated content as drafts to Buffer queue
+image_hosting:
+  provider: "imgur"  # Uses Imgur for public image URLs
+  # Set IMGUR_CLIENT_ID in .env
+
+scheduling:
+  default_timezone: "America/Los_Angeles"
+
+category_types:
+  single_image: [did-you-know, infographic, prompt-drop]
+  carousel: [autopsy, prompt-pattern, user-story]
