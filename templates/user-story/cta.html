@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    /* Slide 6 — CTA
+       Large centered notebook with left spiral and bookmark tab, slight tilt */
+
+    .notebook {
+      width: 600px;
+      height: 680px;
+      top: 46%;
+      left: 52%;
+      transform: translate(-50%, -50%) rotate(-2deg);
+    }
+
+    .notebook__content {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .cta-headline {
+      font-family: 'PaytoneOne', sans-serif;
+      font-size: 64px;
+      color: var(--black);
+      line-height: 1.1;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .cta-url {
+      font-family: 'PaytoneOne', sans-serif;
+      font-size: 34px;
+      color: var(--black);
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .cta-sub {
+      font-family: 'PaytoneOne', sans-serif;
+      font-size: 40px;
+      color: var(--black);
+      text-align: center;
+    }
+
+    /* Star positions */
+    .star-1 { top: 180px; right: 80px; }
+    .star-2 { bottom: 160px; left: 100px; }
+
+    /* Arrow — left side, partially off-screen */
+    .arrow-icon {
+      left: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 75px;
+      height: 75px;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="brand-top">Prompt Optimizer</div>
+
+    <div class="notebook">
+      <div class="notebook__shadow"></div>
+      <div class="notebook__body">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;" viewBox="0 0 600 680">
+          <rect x="14" y="14" width="572" height="652" rx="24" ry="24"
+                fill="none" stroke="#FF3131" stroke-width="4" stroke-dasharray="28 14"/>
+        </svg>
+        <div class="bookmark-tab"></div>
+        <div class="notebook__content">
+          <div class="cta-headline">{{cta_headline}}</div>
+          <div class="cta-url">{{cta_url}}</div>
+          <div class="cta-sub">{{cta_sub}}</div>
+        </div>
+      </div>
+      <div class="spiral-left">
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+        <div class="pin"><div class="pin__dot"></div><div class="pin__line"></div></div>
+      </div>
+    </div>
+
+    <div class="star-4 star-1"></div>
+    <div class="star-4 star-2"></div>
+
+    <div class="arrow-icon">
+      <svg viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="69" height="69" rx="18" stroke="#0A0A0A" stroke-width="5" fill="none"/>
+        <path d="M28 22L48 37.5L28 53" stroke="#0A0A0A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="handle-bottom">@promptoptimizer</div>
+  </div>
+
+  <script>
+    const el = document.querySelector('.cta-headline');
+    const container = document.querySelector('.notebook__content');
+    let size = 64;
+    while (el.scrollHeight > container.clientHeight * 0.4 && size > 36) {
+      size -= 4;
+      el.style.fontSize = size + 'px';
+    }
+  </script>
+</body>
+</html>

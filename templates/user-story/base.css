@@ -1,0 +1,262 @@
+/* ═══════════════════════════════════════════════════════════════════
+   User Story — Carousel Base Styles
+   Brand: Prompt Optimizer (@promptoptimizer)
+   Font: Paytone One
+   Dimensions: 1080 × 1350 (4:5)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Font Stack ─────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'PaytoneOne';
+  src: url('../../fonts/PaytoneOne.ttf') format('truetype');
+  font-weight: 400;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Design Tokens ──────────────────────────────────────────────── */
+
+:root {
+  --red: #FF3131;
+  --black: #0A0A0A;
+  --white: #FFFFFF;
+  --shadow: #C43303;
+
+  --slide-w: 1080px;
+  --slide-h: 1350px;
+}
+
+body {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Slide Container ────────────────────────────────────────────── */
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  position: relative;
+  background: var(--red);
+  background-image:
+    linear-gradient(rgba(0,0,0,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.10) 1px, transparent 1px);
+  background-size: 55px 55px;
+  overflow: hidden;
+}
+
+/* ── Brand Text ─────────────────────────────────────────────────── */
+
+.brand-top {
+  position: absolute;
+  top: 45px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'PaytoneOne', sans-serif;
+  font-size: 28px;
+  color: var(--black);
+  letter-spacing: 0.5px;
+  font-style: italic;
+  z-index: 20;
+}
+
+.handle-bottom {
+  position: absolute;
+  bottom: 45px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'PaytoneOne', sans-serif;
+  font-size: 28px;
+  color: var(--black);
+  letter-spacing: 0.5px;
+  font-style: italic;
+  z-index: 20;
+}
+
+/* ── Heading Text ───────────────────────────────────────────────── */
+
+.heading {
+  font-family: 'PaytoneOne', sans-serif;
+  color: var(--black);
+  line-height: 0.95;
+  letter-spacing: -2px;
+  z-index: 10;
+}
+
+/* ── Notebook Component ─────────────────────────────────────────── */
+
+.notebook {
+  position: absolute;
+  z-index: 5;
+}
+
+.notebook__shadow {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 100%;
+  height: 100%;
+  background: var(--shadow);
+  border-radius: 30px;
+}
+
+.notebook__body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  border: 4.5px solid var(--black);
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+/* Dashes are now rendered via inline SVG in each slide HTML
+   for larger, more accurate dash segments (stroke-dasharray). */
+
+.notebook__content {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  bottom: 40px;
+  left: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+/* ── Spiral Binding — Top ───────────────────────────────────────── */
+
+.spiral-top {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0;
+  z-index: 15;
+}
+
+.spiral-top .pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50px;
+}
+
+.spiral-top .pin__line {
+  width: 4px;
+  height: 24px;
+  background: var(--black);
+}
+
+.spiral-top .pin__dot {
+  width: 18px;
+  height: 18px;
+  background: var(--black);
+  border-radius: 50%;
+}
+
+/* ── Spiral Binding — Left ──────────────────────────────────────── */
+
+.spiral-left {
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 15;
+}
+
+.spiral-left .pin {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 60px;
+}
+
+.spiral-left .pin__line {
+  width: 24px;
+  height: 4px;
+  background: var(--black);
+}
+
+.spiral-left .pin__dot {
+  width: 18px;
+  height: 18px;
+  background: var(--black);
+  border-radius: 50%;
+}
+
+/* ── Decorative: 4-Pointed Star ─────────────────────────────────── */
+
+.star-4 {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: var(--black);
+  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
+  z-index: 20;
+}
+
+/* ── Decorative: Arrow ──────────────────────────────────────────── */
+
+.arrow-icon {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  z-index: 20;
+}
+
+.arrow-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Decorative: Pill (half-visible rounded rect) ───────────────── */
+
+.pill {
+  position: absolute;
+  width: 110px;
+  height: 55px;
+  border: 4px solid var(--black);
+  border-radius: 28px;
+  z-index: 2;
+}
+
+/* ── Bookmark Tab ───────────────────────────────────────────────── */
+
+.bookmark-tab {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 55px;
+  background: var(--red);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
+  z-index: 16;
+}
+
+/* ── Body Text (inside notebook) ────────────────────────────────── */
+
+.body-text {
+  font-family: 'PaytoneOne', sans-serif;
+  font-size: 28px;
+  color: var(--black);
+  line-height: 1.45;
+  text-align: center;
+}
