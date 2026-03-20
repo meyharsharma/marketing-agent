@@ -5,21 +5,68 @@ platform: instagram
 
 dimensions:
   width: 1080
-  height: 1080
+  height: 1350
 
 slides:
-  - type: prompt
-    name: "The Prompt"
+  - type: cover
+    name: "Cover"
     placeholders:
-      task_name:
-        description: "What task this prompt solves (short label)"
+      before:
+        description: "Text before the highlighted word"
         required: true
-        example: "REST API Endpoint"
-      target_model:
-        description: "Which AI model this is optimized for"
+        example: "Hook Line"
+      highlight:
+        description: "Key word(s) with red background highlight"
         required: true
-        example: "ChatGPT"
-      prompt_text:
-        description: "The actual prompt — complete, copy-paste ready, model-specific formatting"
+        example: "Comes Here"
+      after:
+        description: "Text after the highlighted word"
+        required: false
+        example: "Like This"
+      body:
+        description: "Body text below the heading"
+        required: false
+        example: ""
+
+  - type: step
+    name: "Prompt Step"
+    repeat: true
+    min_count: 1
+    max_count: 4
+    placeholders:
+      before:
+        description: "Text before the highlighted word"
         required: true
-        example: "You are a senior backend developer. Build a REST endpoint for [resource]..."
+        example: "Define the"
+      highlight:
+        description: "Key word with red background highlight"
+        required: true
+        example: "Role"
+      after:
+        description: "Text after the highlighted word"
+        required: false
+        example: ""
+      body:
+        description: "Body / prompt text below the heading"
+        required: true
+        example: "You are a senior backend developer..."
+
+  - type: closing
+    name: "Closing"
+    placeholders:
+      before:
+        description: "Text before the highlighted word"
+        required: true
+        example: "That's the full"
+      highlight:
+        description: "Key word with red background highlight"
+        required: true
+        example: "prompt"
+      after:
+        description: "Text after the highlighted word"
+        required: false
+        example: ""
+      body:
+        description: "CTA text below the heading"
+        required: false
+        example: "Save and Bookmark this for your next project"
