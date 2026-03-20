@@ -1,0 +1,31 @@
+cover:
+  before: "The Ultimate"
+  highlight: "REST API"
+  after: "Prompt"
+  body: ""
+
+step_1:
+  before: "Define the"
+  highlight: "Role"
+  after: ""
+  body: "You are a senior backend developer specializing in RESTful APIs with 10 years of experience in Node.js and Express."
+
+step_2:
+  before: "Set the"
+  highlight: "Constraints"
+  after: ""
+  body: "Include input validation, rate limiting, and authentication middleware. Return standardized JSON responses."
+
+step_3:
+  before: "Add the"
+  highlight: "Details"
+  after: ""
+  body: "Add pagination for list endpoints, filtering by any field, and sorting. Include OpenAPI documentation inline."
+
+closing:
+  before: "That's the full"
+  highlight: "prompt"
+  after: ""
+  body_before: "Bookmark this for your next project and build your own prompts with"
+  body_highlight: "Prompt Optimizer"
+  body_after: "- Try it today"

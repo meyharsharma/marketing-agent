@@ -4,7 +4,7 @@ hook:
 technique_1:
   number: "01"
   heading: "End-position your constraints"
-  body: "GPT-5 weights the last instruction heaviest."
+  body: ""
 
 technique_2:
   number: "02"

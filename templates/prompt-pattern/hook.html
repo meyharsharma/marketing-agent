@@ -3,42 +3,40 @@
 <head>
   <link rel="stylesheet" href="base.css">
   <style>
-    .hook-text {
-      position: absolute;
-      bottom: 260px;
-      left: 80px;
-      font-size: 58px;
-      line-height: 1.15;
-      max-width: 500px;
-      z-index: 20;
+    .slide {
+      background-image: url('bg_hook.png');
     }
-
-    /* Arrow floats ABOVE the line, not on it */
-    .arrow-circle {
-      right: 140px;
-      top: 340px;
+    .handle-overlay {
+      top: 55px;
+      left: 70px;
+      font-size: 14px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+    }
+    .logo-overlay {
+      top: 40px;
+      right: 50px;
+      padding: 4px;
+      background: #2D2B28;
+    }
+    .hook-overlay {
+      bottom: 210px;
+      left: 65px;
+      font-size: 72px;
+      line-height: 1.12;
+      max-width: 550px;
+      padding: 10px 18px;
     }
   </style>
 </head>
 <body>
   <div class="slide">
-    <div class="top-bar">
-      <div class="handle">@PROMPTOPTIMIZER</div>
-      <div class="logo"><img src="../../logo.png" style="height: 100px; width: auto;"></div>
+    <div class="text-overlay handle-overlay">@promptoptimizer</div>
+    <div class="text-overlay logo-overlay">
+      <img src="../../logo.png" style="height: 90px; width: auto; display: block;">
     </div>
-
-    <!-- Straighter diagonal line from upper-left to lower-right -->
-    <svg class="dashed-line" viewBox="0 0 1080 1080">
-      <path d="M -60 300 Q 200 350 540 540 Q 880 730 1140 800" />
-    </svg>
-
-    <div class="arrow-circle">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#2D2B28" stroke-width="1.5">
-        <path d="M5 12h14M13 6l6 6-6 6"/>
-      </svg>
-    </div>
-
-    <div class="text-main hook-text">{{hook_line}}</div>
+    <div class="text-overlay hook-overlay">{{hook_line}}</div>
   </div>
 </body>
 </html>

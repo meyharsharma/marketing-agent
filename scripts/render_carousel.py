@@ -220,6 +220,138 @@ def _resolve_from_markdown_slides(template: dict, md_slides: list) -> list:
     return slides
 
 
+def _check_slide(page, slide_w: int, slide_h: int) -> list:
+    """
+    Check a rendered slide for layout issues.
+    Returns a list of issue descriptions (empty = all good).
+    """
+    issues = []
+
+    elements = page.evaluate("""() => {
+        const els = document.querySelectorAll('.text-block, .body, .heading, .highlight, .prompt-text, .hook-text, .pattern-heading, .additional-text, .closing-text, .cta-text, .number-overlay, .step-number');
+        const results = [];
+        for (const el of els) {
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            if (el.textContent.trim() === '') continue;
+            results.push({
+                tag: el.className || el.tagName,
+                text: el.textContent.trim().substring(0, 40),
+                x: rect.x, y: rect.y,
+                w: rect.width, h: rect.height,
+                right: rect.right, bottom: rect.bottom,
+                fontSize: parseFloat(style.fontSize),
+                fontFamily: style.fontFamily,
+                fontWeight: style.fontWeight,
+            });
+        }
+        return results;
+    }""")
+
+    if not elements:
+        return issues
+
+    # Check 1: Off-screen elements
+    for el in elements:
+        if el['right'] > slide_w + 5:
+            issues.append(f"OFF-RIGHT: '{el['text']}' extends {int(el['right'] - slide_w)}px past right edge")
+        if el['bottom'] > slide_h + 5:
+            issues.append(f"OFF-BOTTOM: '{el['text']}' extends {int(el['bottom'] - slide_h)}px past bottom edge")
+        if el['x'] < -5:
+            issues.append(f"OFF-LEFT: '{el['text']}' starts {int(abs(el['x']))}px off left edge")
+        if el['y'] < -5:
+            issues.append(f"OFF-TOP: '{el['text']}' starts {int(abs(el['y']))}px off top edge")
+
+    # Check 2: Overlapping elements (only between separate elements, not parent/child)
+    for a_idx, a in enumerate(elements):
+        for b_idx, b in enumerate(elements):
+            if b_idx <= a_idx:
+                continue
+            # Skip if one contains the other (parent-child)
+            if (a['x'] <= b['x'] and a['y'] <= b['y'] and
+                a['right'] >= b['right'] and a['bottom'] >= b['bottom']):
+                continue
+            if (b['x'] <= a['x'] and b['y'] <= a['y'] and
+                b['right'] >= a['right'] and b['bottom'] >= a['bottom']):
+                continue
+            # Check overlap
+            overlap_x = max(0, min(a['right'], b['right']) - max(a['x'], b['x']))
+            overlap_y = max(0, min(a['bottom'], b['bottom']) - max(a['y'], b['y']))
+            overlap_area = overlap_x * overlap_y
+            min_area = min(a['w'] * a['h'], b['w'] * b['h'])
+            if min_area > 0 and overlap_area / min_area > 0.15:
+                issues.append(f"OVERLAP: '{a['text'][:20]}' and '{b['text'][:20]}' overlap {int(overlap_area / min_area * 100)}%")
+
+    # Check 3: Font consistency (all text elements should use the same font family)
+    font_families = set()
+    for el in elements:
+        family = el['fontFamily'].split(',')[0].strip().strip('"').strip("'")
+        font_families.add(family)
+    if len(font_families) > 1:
+        issues.append(f"FONT-MISMATCH: Multiple fonts used: {font_families}")
+
+    # Check 4: Text too small to read (body text < 18px)
+    for el in elements:
+        if el['fontSize'] < 18 and el['text']:
+            issues.append(f"TOO-SMALL: '{el['text'][:20]}' is {el['fontSize']}px (min 18px)")
+
+    return issues
+
+
+def _auto_fix(page, issues: list, slide_w: int, slide_h: int):
+    """
+    Apply CSS fixes for detected issues directly in the page.
+    """
+    for issue in issues:
+        if "OFF-RIGHT" in issue or "OFF-LEFT" in issue:
+            # Reduce font size of text-block elements that overflow
+            page.evaluate("""() => {
+                document.querySelectorAll('.text-block').forEach(el => {
+                    let size = parseFloat(window.getComputedStyle(el).fontSize);
+                    while (el.getBoundingClientRect().right > document.body.clientWidth && size > 40) {
+                        size -= 4;
+                        el.style.fontSize = size + 'px';
+                    }
+                });
+            }""")
+
+        if "OFF-BOTTOM" in issue:
+            # Move elements up or reduce body text size
+            page.evaluate("""() => {
+                document.querySelectorAll('.body').forEach(el => {
+                    let size = parseFloat(window.getComputedStyle(el).fontSize);
+                    while (el.getBoundingClientRect().bottom > document.body.clientHeight - 20 && size > 18) {
+                        size -= 2;
+                        el.style.fontSize = size + 'px';
+                    }
+                });
+            }""")
+
+        if "OVERLAP" in issue:
+            # Increase gap between text-block and body
+            page.evaluate("""() => {
+                const tb = document.querySelector('.text-block');
+                const body = document.querySelector('.body');
+                if (tb && body) {
+                    const tbBottom = tb.getBoundingClientRect().bottom;
+                    const bodyTop = body.getBoundingClientRect().top;
+                    if (bodyTop < tbBottom + 20) {
+                        body.style.top = (tbBottom + 40) + 'px';
+                    }
+                }
+            }""")
+
+        if "TOO-SMALL" in issue:
+            page.evaluate("""() => {
+                document.querySelectorAll('.body, .text-sub, .additional-text').forEach(el => {
+                    let size = parseFloat(window.getComputedStyle(el).fontSize);
+                    if (size < 18) {
+                        el.style.fontSize = '20px';
+                    }
+                });
+            }""")
+
+
 def render_slides(template_path: str, content_path: str, output_slug: str = None):
     """Main entry: render all slides from template + content."""
     template_path = Path(template_path)
@@ -245,10 +377,15 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
     out_dir = OUTPUT_DIR / slug
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Read dimensions from template (default 1080x1080)
+    dims = template.get("dimensions", {})
+    slide_w = dims.get("width", SLIDE_WIDTH)
+    slide_h = dims.get("height", SLIDE_HEIGHT)
+
     # Render with Playwright
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        page = browser.new_page(viewport={"width": SLIDE_WIDTH, "height": SLIDE_HEIGHT})
+        page = browser.new_page(viewport={"width": slide_w, "height": slide_h})
 
         for i, slide in enumerate(slide_list):
             slide_type = slide["type"]
@@ -268,6 +405,15 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
 
             page.goto(f"file://{tmp_file.resolve()}")
             page.wait_for_load_state("networkidle")
+
+            # ── Self-check loop ──────────────────────────────────
+            MAX_ATTEMPTS = 3
+            for attempt in range(MAX_ATTEMPTS):
+                issues = _check_slide(page, slide_w, slide_h)
+                if not issues:
+                    break
+                print(f"    ⚠ Slide {i+1} check (attempt {attempt+1}): {', '.join(issues)}")
+                _auto_fix(page, issues, slide_w, slide_h)
 
             # Screenshot
             filename = f"slide_{i + 1:02d}_{slide_type}.png"

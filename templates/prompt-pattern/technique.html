@@ -3,103 +3,85 @@
 <head>
   <link rel="stylesheet" href="base.css">
   <style>
-    .pattern-heading {
-      position: absolute;
-      font-size: 64px;
-      line-height: 1.1;
-      max-width: 700px;
-      z-index: 20;
-    }
+    /* ── Variant backgrounds ── */
+    .slide[data-variant="1"] { background-image: url('bg_technique_v1.png'); }
+    .slide[data-variant="2"] { background-image: url('bg_technique_v2.png'); }
+    .slide[data-variant="3"] { background-image: url('bg_technique_v3.png'); }
 
-    .additional-text {
-      position: absolute;
-      font-size: 32px;
-      line-height: 1.3;
-      max-width: 450px;
-      z-index: 20;
-    }
-
-    .number-circle {
-      width: 130px;
-      height: 130px;
-      z-index: 15;
-    }
-
-    /* ── Variant 1: text centered, U-curve bottom, circle at bottom of U ── */
-    .slide[data-variant="1"] .pattern-heading {
-      top: 42%;
+    /* ── V1: centered text, number at bottom-center circle ── */
+    .slide[data-variant="1"] .heading-overlay {
+      top: 370px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       text-align: center;
+      font-size: 68px;
+      line-height: 1.12;
+      max-width: 700px;
+      padding: 12px 20px;
     }
-    .slide[data-variant="1"] .additional-text {
-      display: none;
+    .slide[data-variant="1"] .body-overlay { display: none; }
+    .slide[data-variant="1"] .number-overlay {
+      left: 450px;
+      top: 805px;
+      width: 70px;
+      height: 45px;
     }
 
-    /* ── Variant 2: text center-left, ascending line, circle lower-left ── */
-    .slide[data-variant="2"] .pattern-heading {
-      top: 220px;
-      left: 120px;
+    /* ── V2: text upper-left, number lower-left circle, body bottom-right ── */
+    .slide[data-variant="2"] .heading-overlay {
+      top: 215px;
+      left: 75px;
+      font-size: 68px;
+      line-height: 1.12;
+      max-width: 600px;
+      padding: 12px 20px;
     }
-    .slide[data-variant="2"] .additional-text {
-      bottom: 110px;
-      right: 80px;
+    .slide[data-variant="2"] .body-overlay {
+      bottom: 80px;
+      right: 50px;
+      font-size: 36px;
+      line-height: 1.25;
       text-align: right;
+      max-width: 500px;
+      padding: 8px 16px;
+    }
+    .slide[data-variant="2"] .number-overlay {
+      left: 135px;
+      top: 740px;
+      width: 70px;
+      height: 45px;
     }
 
-    /* ── Variant 3: text upper-left, descending line, circle right-center ── */
-    .slide[data-variant="3"] .pattern-heading {
-      top: 160px;
-      left: 120px;
+    /* ── V3: text upper-left, number right circle, body bottom-left ── */
+    .slide[data-variant="3"] .heading-overlay {
+      top: 115px;
+      left: 75px;
+      font-size: 68px;
+      line-height: 1.12;
+      max-width: 600px;
+      padding: 12px 20px;
     }
-    .slide[data-variant="3"] .additional-text {
-      bottom: 110px;
-      left: 80px;
-      text-align: left;
+    .slide[data-variant="3"] .body-overlay {
+      bottom: 80px;
+      left: 60px;
+      font-size: 36px;
+      line-height: 1.25;
+      max-width: 500px;
+      padding: 8px 16px;
+    }
+    .slide[data-variant="3"] .number-overlay {
+      left: 775px;
+      top: 640px;
+      width: 70px;
+      height: 45px;
     }
   </style>
 </head>
 <body>
   <div class="slide" data-variant="{{variant}}">
-
-    <svg class="dashed-line" viewBox="0 0 1080 1080">
-      <!-- v1: gentle U-curve across bottom (concave up) -->
-      <path class="line-v1" d="M -60 810 Q 350 900 540 870 Q 730 840 1140 810" />
-      <!-- v2: ascending from lower-left to upper-right -->
-      <path class="line-v2" d="M -60 880 Q 250 820 500 680 Q 750 540 1140 380" style="display:none" />
-      <!-- v3: descending from upper-left to lower-right (gentler, straighter) -->
-      <path class="line-v3" d="M -60 380 Q 300 400 540 530 Q 780 660 1140 700" style="display:none" />
-    </svg>
-
-    <div class="number-circle">
-      <span>{{number}}</span>
-    </div>
-
-    <div class="text-main pattern-heading">{{heading}}</div>
-    <div class="text-sub additional-text">{{body}}</div>
+    <div class="text-overlay heading-overlay">{{heading}}</div>
+    <div class="text-overlay body-overlay">{{body}}</div>
+    <div class="number-overlay">{{number}}</div>
   </div>
-
-  <script>
-    const slide = document.querySelector('.slide');
-    const variant = slide.dataset.variant || '1';
-
-    // Show correct line
-    document.querySelectorAll('.dashed-line path').forEach(p => p.style.display = 'none');
-    const line = document.querySelector('.line-v' + variant);
-    if (line) line.style.display = '';
-
-    // Place circle ON the line at the correct position per variant
-    // v1: center of U-curve (50%), v2: lower-left (15%), v3: right side (78%)
-    const circlePositions = { '1': 0.48, '2': 0.15, '3': 0.78 };
-    const pct = circlePositions[variant] || 0.5;
-
-    if (line) {
-      const totalLen = line.getTotalLength();
-      const pt = line.getPointAtLength(totalLen * pct);
-      const circle = document.querySelector('.number-circle');
-      circle.style.left = (pt.x - 65) + 'px';
-      circle.style.top = (pt.y - 65) + 'px';
-    }
-  </script>
 </body>
 </html>
