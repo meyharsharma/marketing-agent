@@ -81,8 +81,8 @@ def get_organization_id(token):
     return orgs[0]["id"]
 
 
-def get_instagram_channel(token, org_id):
-    """Find the Instagram channel ID."""
+def get_channel(token, org_id, service_name):
+    """Find a channel ID by service name (e.g. 'instagram', 'twitter')."""
     query = f"""
     query GetChannels {{
       channels(input: {{ organizationId: "{org_id}" }}) {{
@@ -97,32 +97,37 @@ def get_instagram_channel(token, org_id):
     channels = data.get("channels", [])
 
     for ch in channels:
-        if ch.get("service", "").lower() == "instagram":
-            print(f"Found Instagram channel: {ch.get('displayName', ch.get('name', ''))} ({ch['id']})")
+        if ch.get("service", "").lower() == service_name:
+            print(f"Found {service_name} channel: {ch.get('displayName', ch.get('name', ''))} ({ch['id']})")
             return ch["id"]
 
-    print("Error: No Instagram channel found in Buffer account.")
+    print(f"Error: No {service_name} channel found in Buffer account.")
     print("Available channels:")
     for ch in channels:
         print(f"  - {ch.get('displayName', '')} ({ch.get('service', '')})")
     sys.exit(1)
 
 
-def resolve_channel_id(config, token):
-    """Get Instagram channel ID from config or auto-discover."""
-    channel_id = config["channels"]["instagram"].get("profile_id", "")
+def resolve_channel_id(config, token, platform="instagram"):
+    """Get channel ID from config or auto-discover for the given platform."""
+    channel_cfg = config.get("channels", {}).get(platform, {})
+    channel_id = channel_cfg.get("profile_id", "") if isinstance(channel_cfg, dict) else ""
     if channel_id:
         return channel_id
 
-    print("No Instagram channel_id configured. Discovering...")
+    print(f"No {platform} channel_id configured. Discovering...")
     org_id = get_organization_id(token)
-    channel_id = get_instagram_channel(token, org_id)
+    channel_id = get_channel(token, org_id, platform)
 
     # Save back to config
     config_path = Path(__file__).parent.parent / "config" / "buffer.yaml"
     with open(config_path) as f:
         raw = f.read()
-    raw = raw.replace('profile_id: ""', f'profile_id: "{channel_id}"')
+    # Replace the empty profile_id under the correct platform section
+    # Find the platform section and replace its empty profile_id
+    import re as _re
+    pattern = f"({platform}:\\s*\\n\\s*profile_id:\\s*)\"\""
+    raw = _re.sub(pattern, f'\\1"{channel_id}"', raw)
     with open(config_path, "w") as f:
         f.write(raw)
 
@@ -177,55 +182,77 @@ def resolve_images(slug, category, config):
     return images
 
 
-def upload_image_imgbb(image_path, api_key):
-    """Upload an image to imgbb and return the public URL. Converts PNG to JPEG for Instagram compatibility."""
-    if not api_key:
-        print("Error: IMGBB_API_KEY not set. Add it to .env or export it.")
-        sys.exit(1)
-
-    # Convert PNG to JPEG for better Instagram compatibility
-    import io
+def upload_image_github(image_path, slug):
+    """Upload image to GitHub media-assets branch and return a permanent raw URL."""
+    import io, subprocess as _sp, shutil
     from PIL import Image as PILImage
+
+    project_root = Path(__file__).parent.parent
+
+    # Convert PNG to JPEG
     img = PILImage.open(image_path)
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
-    buf = io.BytesIO()
-    img.save(buf, format='JPEG', quality=95)
-    image_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    jpg_name = Path(image_path).stem + ".jpg"
+    tmp_dir = project_root / "_media_upload" / slug
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    jpg_path = tmp_dir / jpg_name
+    img.save(str(jpg_path), format='JPEG', quality=95)
 
-    resp = requests.post(
-        "https://api.imgbb.com/1/upload",
-        data={
-            "key": api_key,
-            "image": image_b64,
-            "name": Path(image_path).stem,
-        },
-        timeout=120,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    # Push to media-assets branch via worktree
+    wt = project_root / "_media_worktree"
+    if wt.exists():
+        _sp.run(["git", "worktree", "remove", "--force", str(wt)],
+                capture_output=True, cwd=str(project_root))
+        if wt.exists():
+            shutil.rmtree(wt)
 
-    if not data.get("success"):
-        print(f"imgbb upload failed: {data}")
-        sys.exit(1)
+    try:
+        _sp.run(["git", "worktree", "add", str(wt), "media-assets"],
+                capture_output=True, check=True, cwd=str(project_root))
+        dest = wt / slug
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(jpg_path), str(dest / jpg_name))
+        _sp.run(["git", "add", "."], capture_output=True, cwd=str(wt))
+        _sp.run(["git", "commit", "-m", f"Add {slug}/{jpg_name}"],
+                capture_output=True, cwd=str(wt))
+        _sp.run(["git", "push", "origin", "media-assets"],
+                capture_output=True, timeout=30, cwd=str(wt))
+    finally:
+        _sp.run(["git", "worktree", "remove", "--force", str(wt)],
+                capture_output=True, cwd=str(project_root))
+        if wt.exists():
+            shutil.rmtree(wt, ignore_errors=True)
+        shutil.rmtree(str(tmp_dir), ignore_errors=True)
 
-    url = data["data"]["url"]
-    print(f"  Uploaded {Path(image_path).name} -> {url}")
-    return url
+    # Build raw GitHub URL from remote
+    remote = _sp.run(["git", "remote", "get-url", "origin"],
+                     capture_output=True, text=True, cwd=str(project_root)).stdout.strip()
+    if ":" in remote and "@" in remote:
+        repo_path = remote.split(":")[-1].replace(".git", "")
+    else:
+        repo_path = remote.split("github.com/")[-1].replace(".git", "")
+
+    raw_url = f"https://raw.githubusercontent.com/{repo_path}/media-assets/{slug}/{jpg_name}"
+    print(f"  Uploaded {Path(image_path).name} -> {raw_url}")
+    return raw_url
 
 
-def create_buffer_post(token, channel_id, text, image_urls, scheduled_at=None, mode="customScheduled", is_carousel=False):
+def create_buffer_post(token, channel_id, text, image_urls, scheduled_at=None, mode="customScheduled", is_carousel=False, platform="instagram"):
     """Create a post via Buffer GraphQL API."""
-    ig_type = "carousel" if is_carousel else "post"
-
     # Build input fields
     input_parts = [
         f'text: {json.dumps(text)}',
         f'channelId: "{channel_id}"',
         'schedulingType: automatic',
         f'mode: {mode}',
-        f'metadata: {{ instagram: {{ type: {ig_type}, shouldShareToFeed: true }} }}',
     ]
+
+    # Platform-specific metadata
+    if platform == "instagram":
+        ig_type = "carousel" if is_carousel else "post"
+        input_parts.append(f'metadata: {{ instagram: {{ type: {ig_type}, shouldShareToFeed: true }} }}')
+    # Twitter doesn't require platform-specific metadata in Buffer
     if scheduled_at:
         input_parts.append(f'dueAt: "{scheduled_at.strftime("%Y-%m-%dT%H:%M:%S.000Z")}"')
     if image_urls:
@@ -283,6 +310,7 @@ def update_frontmatter(path, buffer_id, scheduled_at):
 def main():
     parser = argparse.ArgumentParser(description="Schedule a post to Buffer")
     parser.add_argument("markdown_file", help="Path to the generated post markdown")
+    parser.add_argument("--slides", help="Comma-separated 1-based slide numbers to include (e.g. '1,3,5,7')")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--schedule", help="Schedule time, e.g. '2026-03-17 09:00'")
     group.add_argument("--queue", action="store_true", help="Add to Buffer queue")
@@ -296,11 +324,12 @@ def main():
     # Load config
     config = load_config()
     token = config["token"]
-    channel_id = resolve_channel_id(config, token)
 
     # Parse post
     post = parse_post_markdown(args.markdown_file)
     category = post["frontmatter"].get("category", "")
+    platform = post["frontmatter"].get("platform", "instagram")
+    channel_id = resolve_channel_id(config, token, platform)
 
     # Build post text
     text = post["caption"]
@@ -312,11 +341,18 @@ def main():
 
     # Resolve and upload images
     images = resolve_images(post["slug"], category, config)
+
+    # Filter to selected slides if --slides is provided
+    if args.slides and images:
+        indices = [int(i) - 1 for i in args.slides.split(",")]
+        images = [images[i] for i in indices if 0 <= i < len(images)]
+        print(f"Selected {len(images)} slide(s): {args.slides}")
+
     image_urls = []
     if images:
-        print(f"Uploading {len(images)} image(s) to imgbb...")
+        print(f"Uploading {len(images)} image(s) to GitHub...")
         for img in images:
-            url = upload_image_imgbb(img, config["imgbb_api_key"])
+            url = upload_image_github(img, post["slug"])
             image_urls.append(url)
     else:
         print("No images to upload. Scheduling text-only post.")
@@ -342,7 +378,7 @@ def main():
     print(f"Creating Buffer post (mode: {mode_label})...")
     carousel_cats = config.get("category_types", {}).get("carousel", [])
     is_carousel = category in carousel_cats
-    buffer_id = create_buffer_post(token, channel_id, text, image_urls, scheduled_at, mode, is_carousel)
+    buffer_id = create_buffer_post(token, channel_id, text, image_urls, scheduled_at, mode, is_carousel, platform)
 
     # Update frontmatter
     schedule_str = scheduled_at.isoformat() if scheduled_at else mode_label

@@ -670,6 +670,69 @@ a:hover { color: var(--coral-light); }
 }
 .collapsible--open .collapsible__content { display: block; }
 
+/* ── Modal ────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--cream);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal h3 { margin: 0 0 0.25rem; }
+
+/* ── Slide picker (schedule page + modal) ────────────────────── */
+.slide-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.slide-picker__item {
+  position: relative;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 2px solid var(--gray-200);
+  overflow: hidden;
+  opacity: 0.5;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.slide-picker__item--selected {
+  opacity: 1;
+  border-color: var(--coral);
+}
+.slide-picker__item img {
+  width: 100%;
+  display: block;
+}
+.slide-picker__item input[type="checkbox"] {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  accent-color: var(--coral);
+}
+.slide-picker__label {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
 /* ── Misc ────────────────────────────────────────────────────── */
 .mt-1 { margin-top: 0.5rem; }
 .mt-2 { margin-top: 1rem; }

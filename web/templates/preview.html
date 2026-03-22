@@ -101,12 +101,104 @@
     <div class="btn-group">
       <a href="/schedule/{{ post.path }}" class="btn btn--primary">Schedule to Buffer</a>
       <button class="btn btn--outline" onclick="copyText(this, {{ (post.caption + '\n\n' + post.hashtags) | tojson }})">Copy Caption + Tags</button>
+      {% if post.frontmatter.platform == 'instagram' %}
+      <button class="btn btn--secondary" id="crosspost-x-btn" onclick="startCrosspost()">Cross-post to X</button>
+      {% endif %}
     </div>
+
+    {% if post.frontmatter.platform == 'instagram' and post.slide_images | length > 4 %}
+    <!-- Slide picker modal for cross-posting carousels to X -->
+    <div class="modal-overlay" id="slide-modal" style="display:none;">
+      <div class="modal">
+        <h3>Select up to 4 slides for X</h3>
+        <p class="text-sm text-muted">X supports a maximum of 4 images per tweet.</p>
+        <div class="slide-picker" id="crosspost-slide-picker">
+          {% for img in post.slide_images %}
+          <label class="slide-picker__item {% if loop.index <= 4 %}slide-picker__item--selected{% endif %}">
+            <input type="checkbox" name="xslide" value="{{ loop.index }}" {% if loop.index <= 4 %}checked{% endif %}>
+            <img src="/slides/{{ img }}" alt="Slide {{ loop.index }}">
+            <span class="slide-picker__label">{{ loop.index }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="btn-group mt-2">
+          <button class="btn btn--primary" onclick="confirmCrosspost()">Cross-post</button>
+          <button class="btn btn--ghost" onclick="document.getElementById('slide-modal').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script>
+// Cross-post to X
+function startCrosspost() {
+  const modal = document.getElementById('slide-modal');
+  if (modal) {
+    // Has >4 slides — show picker
+    modal.style.display = 'flex';
+    initCrosspostPicker();
+  } else {
+    // Single image or <=4 slides — cross-post directly
+    doCrosspost();
+  }
+}
+
+function initCrosspostPicker() {
+  const picker = document.getElementById('crosspost-slide-picker');
+  if (!picker) return;
+  picker.addEventListener('change', function(e) {
+    if (e.target.type !== 'checkbox') return;
+    const checked = picker.querySelectorAll('input:checked');
+    if (checked.length > 4) {
+      e.target.checked = false;
+      return;
+    }
+    picker.querySelectorAll('.slide-picker__item').forEach(item => {
+      const cb = item.querySelector('input');
+      item.classList.toggle('slide-picker__item--selected', cb.checked);
+    });
+  });
+}
+
+function confirmCrosspost() {
+  const picker = document.getElementById('crosspost-slide-picker');
+  const checked = picker.querySelectorAll('input:checked');
+  const slides = Array.from(checked).map(cb => cb.value).join(',');
+  doCrosspost(slides);
+}
+
+async function doCrosspost(slides) {
+  const btn = document.getElementById('crosspost-x-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+
+  const modal = document.getElementById('slide-modal');
+  if (modal) modal.style.display = 'none';
+
+  const payload = {
+    source_path: {{ post.path | tojson }},
+    target_platform: 'twitter',
+  };
+  if (slides) payload.slides = slides;
+
+  const res = await fetch('/api/crosspost', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (data.success) {
+    window.location.href = '/preview/' + data.path;
+  } else {
+    if (btn) { btn.disabled = false; btn.textContent = 'Cross-post to X'; }
+    alert('Error: ' + (data.error || 'Unknown error'));
+  }
+}
+</script>
+
 {% if not post.caption %}
 <script>
 // Poll for caption completion (background generation)

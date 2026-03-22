@@ -12,6 +12,23 @@
 
 <div class="schedule-form">
   <input type="hidden" id="schedule-md-path" value="{{ post.path }}">
+  <input type="hidden" id="max-images" value="{{ max_images }}">
+
+  {% if post.slide_images and post.slide_images | length > max_images %}
+  <div class="form-group">
+    <label>Select Slides (max {{ max_images }})</label>
+    <p class="text-sm text-muted" style="margin:0.25rem 0 0.5rem;">This platform supports up to {{ max_images }} images. Choose which slides to include.</p>
+    <div class="slide-picker" id="slide-picker">
+      {% for img in post.slide_images %}
+      <label class="slide-picker__item {% if loop.index <= max_images %}slide-picker__item--selected{% endif %}">
+        <input type="checkbox" name="slide" value="{{ loop.index }}" {% if loop.index <= max_images %}checked{% endif %}>
+        <img src="/slides/{{ img }}" alt="Slide {{ loop.index }}">
+        <span class="slide-picker__label">{{ loop.index }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="form-group">
     <label for="schedule-date">Date</label>
@@ -40,5 +57,24 @@
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dateInput = document.getElementById('schedule-date');
   if (dateInput) dateInput.value = tomorrow.toISOString().split('T')[0];
+
+  // Slide picker: enforce max selection
+  const picker = document.getElementById('slide-picker');
+  if (picker) {
+    const maxImages = parseInt(document.getElementById('max-images').value, 10);
+    picker.addEventListener('change', function(e) {
+      if (e.target.type !== 'checkbox') return;
+      const checked = picker.querySelectorAll('input[type="checkbox"]:checked');
+      if (checked.length > maxImages) {
+        e.target.checked = false;
+        return;
+      }
+      // Update visual state
+      picker.querySelectorAll('.slide-picker__item').forEach(item => {
+        const cb = item.querySelector('input[type="checkbox"]');
+        item.classList.toggle('slide-picker__item--selected', cb.checked);
+      });
+    });
+  }
 </script>
 {% endblock %}
