@@ -123,11 +123,18 @@ notebooklm_notebook: <notebook_id>
 <Key facts and citations from NotebookLM query — kept for reference/verification>
 ```
 
+## Infographic Image Rules
+
+- **3-7 main points maximum.** Each point gets a bold heading and 2-3 lines of subtext. No more.
+- Large, readable fonts throughout. Every word must be legible at phone screen size (1080x1080).
+- No tables, no complex diagrams, no nested bullet points. Clean layout with whitespace.
+- Simple beats dense. If someone can't scan it in 10 seconds, it's too complex.
+
 ## Quality Rules
 
 - Every fact in the caption must come from the NotebookLM research or be verifiably accurate
-- The hook must earn the stop — no "Did you know..." or "Here's why..." openers unless they genuinely surprise
-- The body paragraph is the value — it should feel like getting a free consulting session, not reading a social media post
+- The hook must earn the stop, no "Did you know..." or "Here's why..." openers unless they genuinely surprise
+- The body paragraph is the value, it should feel like getting a free consulting session, not reading a social media post
 - Voice: confident, technical but accessible, slightly irreverent. Never preachy or hypey.
-- No product pitching in the caption — the information is the value. Handle (@PROMPTOPTIMIZER) is on the infographic image only.
+- No product pitching in the caption, the information is the value. Handle (@PROMPTOPTIMIZER) is on the infographic image only.
 - Match the ICP's language patterns and pain points from the ICP config

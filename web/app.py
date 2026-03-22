@@ -10,15 +10,21 @@ Usage:
     python3 web/app.py
 """
 
+import json
 import os
 import re
 import subprocess
+import sys
 import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 import yaml
+
+# Allow importing from scripts/
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+from process_infographic import process_infographic
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
 
 # ── Project paths ────────────────────────────────────────────────────
@@ -190,11 +196,17 @@ def scan_posts():
         title_match = re.search(r"^# (.+)$", text, re.MULTILINE)
         title = title_match.group(1) if title_match else md_file.stem
 
-        # Find slides
+        # Find slides — infographics store image path in frontmatter
         slug = re.sub(r"^\d{4}-\d{2}-\d{2}_", "", md_file.stem)
-        slides_path = _find_slides_dir(slug)
-        slide_images = sorted(slides_path.glob("*.png")) if slides_path.exists() else []
-        thumbnail = str(slide_images[0].relative_to(SLIDES_DIR)) if slide_images else None
+        infographic_image = fm.get("infographic_image")
+        if infographic_image:
+            img_path = PROJECT_ROOT / infographic_image
+            slide_images = [img_path] if img_path.exists() else []
+            thumbnail = str(img_path.relative_to(SLIDES_DIR)) if slide_images else None
+        else:
+            slides_path = _find_slides_dir(slug)
+            slide_images = sorted(slides_path.glob("*.png")) if slides_path.exists() else []
+            thumbnail = str(slide_images[0].relative_to(SLIDES_DIR)) if slide_images else None
 
         posts.append({
             "path": str(rel),
@@ -255,12 +267,18 @@ def parse_post(rel_path):
         for m in re.finditer(slide_pattern, slides_match.group(1), re.DOTALL):
             slides.append({"title": m.group(1).strip(), "content": m.group(2).strip()})
 
-    # Slide images
+    # Slide images — infographics store image path in frontmatter
     slug = re.sub(r"^\d{4}-\d{2}-\d{2}_", "", Path(rel_path).stem)
-    slides_path = _find_slides_dir(slug)
+    infographic_image = fm.get("infographic_image")
     slide_images = []
-    if slides_path.exists():
-        slide_images = [str(p.relative_to(SLIDES_DIR)) for p in sorted(slides_path.glob("*.png"))]
+    if infographic_image:
+        img_path = PROJECT_ROOT / infographic_image
+        if img_path.exists():
+            slide_images = [str(img_path.relative_to(SLIDES_DIR))]
+    else:
+        slides_path = _find_slides_dir(slug)
+        if slides_path.exists():
+            slide_images = [str(p.relative_to(SLIDES_DIR)) for p in sorted(slides_path.glob("*.png"))]
 
     return {
         "path": rel_path,
@@ -570,14 +588,24 @@ def _md_to_prompt_pattern_yaml(md_text):
         heading_match = re.search(r'\*\*(?:Heading|Title|Hook|Pattern)\s*:\*\*\s*(.+?)(?=\n|$)', body_text)
         body_match = re.search(r'\*\*(?:Body|Text)\s*:\*\*\s*(.+?)(?=\n\*\*|\n\n|$)', body_text, re.DOTALL)
 
-        if heading_match:
+        # Check for Before/After format
+        before_match = re.search(r'\*\*Before:?\*\*\s*\n?(.+?)(?=\*\*After|\Z)', body_text, re.DOTALL)
+        after_match = re.search(r'\*\*After:?\*\*\s*\n?(.+?)(?=\*\*|\n###|\Z)', body_text, re.DOTALL)
+
+        if before_match and after_match:
+            # Before/After slide - combine into a single body
+            before_text = before_match.group(1).strip().split('\n')[0].strip()
+            after_text = after_match.group(1).strip().split('\n')[0].strip()
+            bold_lines = [heading_match.group(1).strip()] if heading_match else ['Before vs After']
+            body_only = f'Before: "{before_text}" After: "{after_text}"'
+        elif heading_match:
             # Labeled format: **Heading:** Value
             bold_lines = [heading_match.group(1).strip()]
             body_only = body_match.group(1).strip() if body_match else ''
         else:
             # Unlabeled format: **Bold heading**\nBody text
             all_bold = re.findall(r'\*\*(.+?)\*\*', body_text)
-            bold_lines = [b for b in all_bold if not re.match(r'^(?:Body|Text|Heading)\s*:', b)]
+            bold_lines = [b for b in all_bold if not re.match(r'^(?:Body|Text|Heading|Before|After)\s*:?', b)]
             body_only = re.sub(r'\*\*[^*]+\*\*\s*', '', body_text).strip()
         body_lines = []
         for l in body_only.split('\n'):
@@ -613,7 +641,7 @@ def _md_to_prompt_pattern_yaml(md_text):
             }
         elif i == len(slides) - 1 or 'when to use' in title or 'closing' in title:
             content['payoff'] = {
-                'before': before, 'highlight': highlight, 'after': after,
+                'before': 'Save this', 'highlight': 'Post', 'after': '',
                 'body_before': 'Build better prompts with',
                 'body_highlight': 'Prompt Optimizer',
                 'body_after': '- link in bio',
@@ -632,15 +660,32 @@ def _md_to_prompt_pattern_yaml(md_text):
 
 
 def _truncate_words(text, max_chars):
-    """Truncate text at a word boundary, never mid-word."""
+    """Truncate text at the last complete sentence within the character limit."""
     if len(text) <= max_chars:
         return text
+
     truncated = text[:max_chars]
-    # Find last space
+
+    # Find the last sentence-ending punctuation (. ! ?) NOT inside quotes
+    # Walk backwards, tracking quote depth
+    in_quote = False
+    last_sentence_end = -1
+    for i in range(len(truncated) - 1, 0, -1):
+        if truncated[i] == '"':
+            in_quote = not in_quote
+        if not in_quote and truncated[i] in '.!?' and i > 0 and truncated[i - 1].isalpha():
+            # Check it's followed by space or end of string
+            if i == len(truncated) - 1 or truncated[i + 1] == ' ' or truncated[i + 1] == '"':
+                last_sentence_end = i + 1
+                break
+
+    if last_sentence_end > max_chars * 0.3:
+        return truncated[:last_sentence_end].strip()
+
+    # Fallback: cut at last space
     last_space = truncated.rfind(' ')
     if last_space > max_chars * 0.5:
         truncated = truncated[:last_space]
-    # Remove trailing punctuation fragments
     return truncated.rstrip('.,;:- ') + '.'
 
 
@@ -779,40 +824,253 @@ def _run_generation_full(job_id, params):
                 jobs[job_id]["slug"] = slug
             return
 
-        # Render slides
+        # Render slides (skip for infographics — those are generated by NotebookLM)
         with job_lock:
-            jobs[job_id]["progress"] = "Rendering slides..."
             jobs[job_id]["slug"] = slug
 
-        template_yaml = PROJECT_ROOT / "templates" / f"{category}.yaml"
-
-        # For categories with structured templates, convert markdown to content YAML
-        content_dict, needs_yaml = _md_to_content_yaml(output_text, category)
-        if needs_yaml and content_dict:
-            content_yaml_path = output_file.with_suffix(".content.yaml")
-            content_yaml_path.write_text(yaml.dump(content_dict, default_flow_style=False, allow_unicode=True))
-            render_source = content_yaml_path
-        else:
-            render_source = output_file
-
-        success, warning = _render_slides(category, template_yaml, render_source, slug)
-        if warning:
+        if category == "infographic":
+            # Infographic images come from NotebookLM, not render_carousel.py.
+            # The image path is stored in frontmatter as infographic_image.
             with job_lock:
-                jobs[job_id]["render_warning"] = warning
+                jobs[job_id]["status"] = "complete"
+                jobs[job_id]["progress"] = "Done! Use /notebooklm to generate the infographic image."
+                jobs[job_id]["output_path"] = rel_path
+        else:
+            with job_lock:
+                jobs[job_id]["progress"] = "Rendering slides..."
 
-        with job_lock:
-            jobs[job_id]["status"] = "complete"
-            jobs[job_id]["progress"] = "Done!"
-            jobs[job_id]["output_path"] = rel_path
-            jobs[job_id]["slug"] = slug
-            slides_path = SLIDES_DIR / slug
-            if slides_path.exists():
-                jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
+            template_yaml = PROJECT_ROOT / "templates" / f"{category}.yaml"
+
+            # For categories with structured templates, convert markdown to content YAML
+            content_dict, needs_yaml = _md_to_content_yaml(output_text, category)
+            if needs_yaml and content_dict:
+                content_yaml_path = output_file.with_suffix(".content.yaml")
+                content_yaml_path.write_text(yaml.dump(content_dict, default_flow_style=False, allow_unicode=True))
+                render_source = content_yaml_path
+            else:
+                render_source = output_file
+
+            success, warning = _render_slides(category, template_yaml, render_source, slug)
+            if warning:
+                with job_lock:
+                    jobs[job_id]["render_warning"] = warning
+
+            with job_lock:
+                jobs[job_id]["status"] = "complete"
+                jobs[job_id]["progress"] = "Done!"
+                jobs[job_id]["output_path"] = rel_path
+                slides_path = SLIDES_DIR / slug
+                if slides_path.exists():
+                    jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
 
     except subprocess.TimeoutExpired:
         with job_lock:
             jobs[job_id]["status"] = "error"
             jobs[job_id]["error"] = "Generation timed out (180s limit)"
+    except Exception as e:
+        with job_lock:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = str(e)
+
+
+NOTEBOOK_ID = "57639ed8-99e9-47c0-b82d-6d9443f88b51"
+
+INFOGRAPHIC_STYLE_MAP = {
+    "cheat_sheet": "professional",
+    "comparison": "editorial",
+    "framework": "instructional",
+    "data_insight": "editorial",
+}
+
+RESEARCH_QUESTION_TEMPLATES = {
+    "cheat_sheet": "What are the 3-7 most important rules for {topic}? Give only the top points, each with a one-sentence explanation.",
+    "comparison": "Compare the key aspects of {topic}. List 3-5 main differences, each with a one-sentence explanation.",
+    "framework": "What is the recommended framework for {topic}? Break it into 3-5 clear stages with a one-sentence explanation each.",
+    "data_insight": "What are the 3-5 most important data points about {topic}? Give each with a one-sentence explanation.",
+}
+
+INFOGRAPHIC_INSTRUCTIONS = (
+    "CRITICAL: Keep this infographic SIMPLE and READABLE. "
+    "Use only 3-7 main points. Each point gets a bold heading and 2-3 lines of subtext maximum. "
+    "Large, readable fonts throughout. No tables, no complex diagrams, no nested bullets. "
+    "Clean layout with plenty of whitespace. Every word must be legible at phone screen size."
+)
+
+
+def _run_notebooklm_cmd(args, timeout=60):
+    """Run a notebooklm CLI command and return (success, stdout, stderr)."""
+    result = subprocess.run(
+        ["notebooklm"] + args,
+        capture_output=True, text=True, timeout=timeout,
+        cwd=str(PROJECT_ROOT),
+    )
+    return result.returncode == 0, result.stdout.strip(), result.stderr.strip()
+
+
+def _run_generation_infographic(job_id, params):
+    """Full generation for infographic posts via NotebookLM + Claude caption."""
+    try:
+        platform = params["platform"]
+        category = params["category"]
+        topic = params["topic"]
+        icp = params.get("icp", "solo-builder")
+        topic_data = params.get("topic_data", {})
+        slug = _slugify(topic_data.get("title", topic))
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        infographic_type = topic_data.get("type", "cheat_sheet")
+        style = INFOGRAPHIC_STYLE_MAP.get(infographic_type, "professional")
+
+        # Create output file and slides directory
+        output_file = _make_output_file(platform, category, slug)
+        rel_path = str(output_file.relative_to(OUTPUT_DIR))
+        slug = re.sub(r"^\d{4}-\d{2}-\d{2}_", "", output_file.stem)
+
+        slides_dir = SLIDES_DIR / slug
+        slides_dir.mkdir(parents=True, exist_ok=True)
+
+        # Phase 1: Set NotebookLM context
+        with job_lock:
+            jobs[job_id]["progress"] = "Setting up NotebookLM..."
+        ok, _, err = _run_notebooklm_cmd(["use", NOTEBOOK_ID])
+        if not ok:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Failed to set NotebookLM context: {err}"
+            return
+
+        # Phase 2: Research topic
+        with job_lock:
+            jobs[job_id]["progress"] = "Researching topic via NotebookLM..."
+        question_template = RESEARCH_QUESTION_TEMPLATES.get(infographic_type, RESEARCH_QUESTION_TEMPLATES["cheat_sheet"])
+        research_question = question_template.format(topic=topic)
+
+        ok, research_stdout, err = _run_notebooklm_cmd(
+            ["ask", research_question, "--json"], timeout=120
+        )
+        research_text = ""
+        if ok and research_stdout:
+            try:
+                research_data = json.loads(research_stdout)
+                research_text = research_data.get("answer", research_stdout)
+            except json.JSONDecodeError:
+                research_text = research_stdout
+
+        # Phase 3: Generate infographic image
+        with job_lock:
+            jobs[job_id]["progress"] = "Generating infographic image (this may take a few minutes)..."
+        ok, gen_stdout, err = _run_notebooklm_cmd(
+            ["generate", "infographic", INFOGRAPHIC_INSTRUCTIONS,
+             "--orientation", "square", "--detail", "concise",
+             "--style", style, "--json"],
+            timeout=60,
+        )
+        if not ok:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Failed to start infographic generation: {err}"
+            return
+
+        artifact_id = None
+        try:
+            gen_data = json.loads(gen_stdout)
+            artifact_id = gen_data.get("task_id") or gen_data.get("artifact_id") or gen_data.get("id")
+        except json.JSONDecodeError:
+            pass
+
+        if not artifact_id:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Could not parse artifact ID from NotebookLM: {gen_stdout}"
+            return
+
+        # Phase 4: Wait for generation to complete
+        with job_lock:
+            jobs[job_id]["progress"] = "Waiting for infographic generation (this may take 5-15 minutes)..."
+        ok, _, err = _run_notebooklm_cmd(
+            ["artifact", "wait", artifact_id, "--timeout", "600"],
+            timeout=660,
+        )
+        if not ok:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Infographic generation timed out or failed: {err}"
+            return
+
+        # Phase 5: Download image
+        with job_lock:
+            jobs[job_id]["progress"] = "Downloading infographic..."
+        image_path = slides_dir / "infographic.png"
+        ok, _, err = _run_notebooklm_cmd(
+            ["download", "infographic", str(image_path)],
+            timeout=60,
+        )
+        if not ok or not image_path.exists():
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Failed to download infographic: {err}"
+            return
+
+        # Phase 6: Post-process (watermark removal, resize to 1080px)
+        with job_lock:
+            jobs[job_id]["progress"] = "Post-processing image..."
+        try:
+            process_infographic(str(image_path))
+        except Exception as e:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Image post-processing failed: {e}"
+            return
+
+        # Determine final image path (process_infographic converts to .jpg)
+        final_image = slides_dir / "infographic.jpg"
+        if not final_image.exists():
+            final_image = image_path  # fallback to .png if conversion didn't happen
+        infographic_image_rel = str(final_image.relative_to(PROJECT_ROOT))
+
+        # Phase 7: Write initial markdown (without caption, added by background thread)
+        with job_lock:
+            jobs[job_id]["progress"] = "Generating caption with Claude..."
+        md_text = f"""---
+platform: {platform}
+category: infographic
+topic: "{topic}"
+icp: {icp}
+date: {today}
+status: draft
+infographic_image: {infographic_image_rel}
+notebooklm_notebook: {NOTEBOOK_ID}
+---
+
+# {topic_data.get('title', topic)}
+
+## Research Notes
+
+{research_text}
+"""
+        output_file.write_text(md_text)
+
+        # Mark as complete (image is ready for preview)
+        with job_lock:
+            jobs[job_id]["status"] = "complete"
+            jobs[job_id]["progress"] = "Done! Generating caption in background..."
+            jobs[job_id]["output_path"] = rel_path
+            jobs[job_id]["slug"] = slug
+            jobs[job_id]["caption_status"] = "generating"
+            jobs[job_id]["slides_dir"] = str(slides_dir.relative_to(PROJECT_ROOT))
+
+        # Phase 8: Generate caption in background thread
+        caption_thread = threading.Thread(
+            target=_run_claude_caption,
+            args=(job_id, platform, category, topic, icp, output_file),
+            daemon=True,
+        )
+        caption_thread.start()
+
+    except subprocess.TimeoutExpired:
+        with job_lock:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = "NotebookLM operation timed out"
     except Exception as e:
         with job_lock:
             jobs[job_id]["status"] = "error"
@@ -993,9 +1251,11 @@ def api_generate():
             "params": params,
         }
 
-    # Route to instant or full generation
+    # Route to instant, infographic, or full generation
     if category in INSTANT_RENDER_CATEGORIES and topic_data:
         target = _run_generation_instant
+    elif category == "infographic":
+        target = _run_generation_infographic
     else:
         target = _run_generation_full
 
