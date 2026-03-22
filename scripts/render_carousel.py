@@ -695,9 +695,12 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
         print("Error: No slides to render. Check your content file.")
         sys.exit(1)
 
-    # Output directory
+    # Output directory — clean existing PNGs to prevent stale slides from prior renders
     slug = output_slug or content_path.stem
     out_dir = OUTPUT_DIR / slug
+    if out_dir.exists():
+        for old_png in out_dir.glob("slide_*.png"):
+            old_png.unlink()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Use template dimensions if specified, otherwise fall back to defaults

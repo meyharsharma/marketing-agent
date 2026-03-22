@@ -150,7 +150,11 @@ def parse_content_bank():
             cells = cells[1:]
             entry = {"id": len(entries) + 1}
             for i, col_name in enumerate(columns):
-                entry[col_name] = cells[i].strip('"').strip() if i < len(cells) else ""
+                cell_val = cells[i].strip() if i < len(cells) else ""
+                # Only strip surrounding quotes if the cell is fully quoted
+                if len(cell_val) >= 2 and cell_val[0] == '"' and cell_val[-1] == '"':
+                    cell_val = cell_val[1:-1]
+                entry[col_name] = cell_val
             entries.append(entry)
         banks[slug] = entries
 
@@ -296,6 +300,13 @@ def parse_post(rel_path):
 
 # ── Generation logic ────────────────────────────────────────────────
 
+def _yaml_quote(text):
+    """Safely quote a string for YAML frontmatter values."""
+    # Use single quotes and escape internal single quotes by doubling them
+    escaped = str(text).replace("'", "''")
+    return f"'{escaped}'"
+
+
 def _slugify(text):
     """Convert text to lowercase kebab-case slug."""
     text = re.sub(r'[^\w\s-]', '', text.lower())
@@ -407,7 +418,7 @@ The output must start with --- and end with the last section. Use this frontmatt
 ---
 platform: {platform}
 category: {category}
-topic: "{topic}"
+topic: {_yaml_quote(topic)}
 icp: {icp}
 date: {today}
 status: draft
@@ -505,7 +516,7 @@ def _run_generation_instant(job_id, params):
         md_text = f"""---
 platform: {platform}
 category: {category}
-topic: "{topic}"
+topic: {_yaml_quote(topic)}
 icp: {icp}
 date: {today}
 status: draft
@@ -1034,7 +1045,7 @@ def _run_generation_infographic(job_id, params):
         md_text = f"""---
 platform: {platform}
 category: infographic
-topic: "{topic}"
+topic: {_yaml_quote(topic)}
 icp: {icp}
 date: {today}
 status: draft
@@ -1393,4 +1404,8 @@ def serve_slide(filepath):
 # ── Main ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    import argparse
+    _p = argparse.ArgumentParser()
+    _p.add_argument("--port", type=int, default=5000)
+    _args = _p.parse_args()
+    app.run(debug=True, host="127.0.0.1", port=_args.port)
