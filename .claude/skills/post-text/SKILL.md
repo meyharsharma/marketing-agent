@@ -40,7 +40,7 @@ Generate text that appears ON the slide images. This text gets rendered into PNG
 | technique 02 | The fix | How the pattern works with example |
 | technique 03 | Before/after or proof | Concrete demonstration |
 | technique 04 | Why it works | Underlying model behavior |
-| payoff | Takeaway | Hardcoded CTA (auto-filled) |
+| payoff | "Save this Post" (hardcoded) | CTA to Prompt Optimizer (hardcoded) |
 
 ---
 

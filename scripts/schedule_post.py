@@ -177,41 +177,60 @@ def resolve_images(slug, category, config):
     return images
 
 
-def upload_image_imgbb(image_path, api_key):
-    """Upload an image to imgbb and return the public URL. Converts PNG to JPEG for Instagram compatibility."""
-    if not api_key:
-        print("Error: IMGBB_API_KEY not set. Add it to .env or export it.")
-        sys.exit(1)
-
-    # Convert PNG to JPEG for better Instagram compatibility
-    import io
+def upload_image_github(image_path, slug):
+    """Upload image to GitHub media-assets branch and return a permanent raw URL."""
+    import io, subprocess, shutil
     from PIL import Image as PILImage
+
+    project_root = Path(__file__).parent.parent
+
+    # Convert PNG to JPEG
     img = PILImage.open(image_path)
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
-    buf = io.BytesIO()
-    img.save(buf, format='JPEG', quality=95)
-    image_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    jpg_name = Path(image_path).stem + ".jpg"
+    tmp_dir = project_root / "_media_upload" / slug
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    jpg_path = tmp_dir / jpg_name
+    img.save(str(jpg_path), format='JPEG', quality=95)
 
-    resp = requests.post(
-        "https://api.imgbb.com/1/upload",
-        data={
-            "key": api_key,
-            "image": image_b64,
-            "name": Path(image_path).stem,
-        },
-        timeout=120,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    # Push to media-assets branch via worktree
+    wt = project_root / "_media_worktree"
+    if wt.exists():
+        subprocess.run(["git", "worktree", "remove", "--force", str(wt)],
+                       capture_output=True, cwd=str(project_root))
+        if wt.exists():
+            shutil.rmtree(wt)
 
-    if not data.get("success"):
-        print(f"imgbb upload failed: {data}")
-        sys.exit(1)
+    try:
+        subprocess.run(["git", "worktree", "add", str(wt), "media-assets"],
+                       capture_output=True, check=True, cwd=str(project_root))
+        dest = wt / slug
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(jpg_path), str(dest / jpg_name))
+        subprocess.run(["git", "add", "."], capture_output=True, cwd=str(wt))
+        subprocess.run(["git", "commit", "-m", f"Add {slug}/{jpg_name}"],
+                       capture_output=True, cwd=str(wt))
+        subprocess.run(["git", "push", "origin", "media-assets"],
+                       capture_output=True, timeout=30, cwd=str(wt))
+    finally:
+        subprocess.run(["git", "worktree", "remove", "--force", str(wt)],
+                       capture_output=True, cwd=str(project_root))
+        if wt.exists():
+            shutil.rmtree(wt, ignore_errors=True)
+        shutil.rmtree(str(tmp_dir), ignore_errors=True)
 
-    url = data["data"]["url"]
-    print(f"  Uploaded {Path(image_path).name} -> {url}")
-    return url
+    # Build raw GitHub URL from remote
+    remote = subprocess.run(["git", "remote", "get-url", "origin"],
+                            capture_output=True, text=True, cwd=str(project_root)).stdout.strip()
+    if ":" in remote and "@" in remote:
+        repo_path = remote.split(":")[-1].replace(".git", "")
+    else:
+        repo_path = remote.split("github.com/")[-1].replace(".git", "")
+
+    raw_url = f"https://raw.githubusercontent.com/{repo_path}/media-assets/{slug}/{jpg_name}"
+    print(f"  Uploaded {Path(image_path).name} -> {raw_url}")
+    return raw_url
 
 
 def create_buffer_post(token, channel_id, text, image_urls, scheduled_at=None, mode="customScheduled", is_carousel=False):
@@ -314,9 +333,9 @@ def main():
     images = resolve_images(post["slug"], category, config)
     image_urls = []
     if images:
-        print(f"Uploading {len(images)} image(s) to imgbb...")
+        print(f"Uploading {len(images)} image(s) to GitHub...")
         for img in images:
-            url = upload_image_imgbb(img, config["imgbb_api_key"])
+            url = upload_image_github(img, post["slug"])
             image_urls.append(url)
     else:
         print("No images to upload. Scheduling text-only post.")
