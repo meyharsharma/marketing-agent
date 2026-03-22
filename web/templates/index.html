@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Content Dashboard</h1>
+  <p>Recent posts from the content pipeline</p>
+</div>
+
+{% if posts %}
+<div class="post-grid">
+  {% for post in posts %}
+  <div class="card card--clickable" style="position:relative;" id="post-{{ loop.index }}">
+    <button class="delete-btn" title="Delete post" onclick="event.stopPropagation(); deletePost('{{ post.path }}', 'post-{{ loop.index }}')">&times;</button>
+    <a href="/preview/{{ post.path }}" style="text-decoration:none; color:inherit; display:block;">
+      {% if post.thumbnail %}
+      <img src="/slides/{{ post.thumbnail }}" alt="" class="post-card__thumb">
+      {% else %}
+      <div class="post-card__thumb post-card__thumb--empty">&#9634;</div>
+      {% endif %}
+      <div class="post-card__body">
+        <div class="post-card__meta">
+          <span class="badge badge--{{ post.category }}">{{ post.category }}</span>
+          <span class="badge badge--{{ post.status }}">{{ post.status }}</span>
+        </div>
+        <div class="post-card__title">{{ post.title }}</div>
+        <div class="post-card__date">{{ post.date }}{% if post.slide_count %} &middot; {{ post.slide_count }} slides{% endif %}</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state__icon">&#9634;</div>
+  <p>No posts generated yet.</p>
+  <a href="/generate" class="btn btn--primary">Generate Your First Post</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deletePost(path, cardId) {
+  if (!confirm('Delete this post and its slides?')) return;
+  const res = await fetch('/api/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    const card = document.getElementById(cardId);
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.95)';
+    setTimeout(() => card.remove(), 300);
+  } else {
+    alert('Error: ' + (data.error || 'Unknown error'));
+  }
+}
+</script>
+{% endblock %}

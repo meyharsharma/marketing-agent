@@ -1,0 +1,31 @@
+hook:
+  before: "Your AI forgets the"
+  highlight: "middle"
+  after: "of your prompt"
+  body: ""
+
+technique_1:
+  before: "The middle"
+  highlight: "drops 30%"
+  after: ""
+  body: "Stanford proved LLMs lose accuracy on mid-prompt information. The start and end get full attention."
+
+technique_2:
+  before: "Put key rules"
+  highlight: "first AND last"
+  after: ""
+  body: "Repeat your most critical constraint at the end of your prompt. The model processes edges with full attention."
+
+technique_3:
+  before: "Bury"
+  highlight: "context"
+  after: "not instructions"
+  body: "Background info goes in the middle. Rules and constraints go at the edges where the model pays attention."
+
+payoff:
+  before: "Sandwich your"
+  highlight: "constraints"
+  after: ""
+  body_before: "Try"
+  body_highlight: "Prompt Optimizer"
+  body_after: "- link in bio"

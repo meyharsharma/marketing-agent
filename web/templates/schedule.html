@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block title %}Schedule — {{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.25rem;">
+    <a href="/preview/{{ post.path }}" class="btn btn--ghost" style="padding:0.35rem 0.5rem;">&larr;</a>
+    <h1>Schedule Post</h1>
+  </div>
+  <p>{{ post.title }}</p>
+</div>
+
+<div class="schedule-form">
+  <input type="hidden" id="schedule-md-path" value="{{ post.path }}">
+
+  <div class="form-group">
+    <label for="schedule-date">Date</label>
+    <input type="date" id="schedule-date">
+  </div>
+
+  <div class="form-group">
+    <label for="schedule-time">Time</label>
+    <input type="time" id="schedule-time" value="09:00">
+  </div>
+
+  <div class="schedule-actions">
+    <button class="btn btn--primary" onclick="submitSchedule('schedule')">Schedule</button>
+    <button class="btn btn--secondary" onclick="submitSchedule('draft')">Save as Draft</button>
+    <button class="btn btn--outline" onclick="submitSchedule('now')">Post Now</button>
+  </div>
+
+  <div class="schedule-result" id="schedule-result" style="display:none;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateInput = document.getElementById('schedule-date');
+  if (dateInput) dateInput.value = tomorrow.toISOString().split('T')[0];
+</script>
+{% endblock %}

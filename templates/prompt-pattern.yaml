@@ -5,25 +5,28 @@ platform: instagram
 
 dimensions:
   width: 1080
-  height: 1080
-
-style:
-  colors:
-    charcoal: "#2D2B28"
-    cream: "#E8DED0"
-    white: "#FFFFFF"
-  handle: "@PROMPTOPTIMIZER"
-  font: OpenSans_Condensed-Light.ttf
-  font_medium: OpenSans_Condensed-Regular.ttf
+  height: 1350
 
 slides:
   - type: hook
     name: "The Hook"
     placeholders:
-      hook_line:
-        description: "Hook text — curiosity-driving line about the pattern"
+      before:
+        description: "Text before the highlighted word"
         required: true
-        example: "You're putting the most important instruction in the wrong place."
+        example: "Your AI forgets the"
+      highlight:
+        description: "Key word(s) with red background highlight"
+        required: true
+        example: "middle"
+      after:
+        description: "Text after the highlighted word"
+        required: false
+        example: "of your prompt"
+      body:
+        description: "Body text below the heading"
+        required: false
+        example: ""
 
   - type: technique
     name: "Pattern Step"
@@ -31,31 +34,47 @@ slides:
     min_count: 2
     max_count: 4
     placeholders:
-      number:
-        description: "Step number formatted as 01, 02, 03, etc."
+      before:
+        description: "Text before the highlighted word"
         required: true
-        example: "01"
-      heading:
-        description: "The pattern/technique name or key point"
+        example: "Put key rules"
+      highlight:
+        description: "Key word with red background highlight"
         required: true
-        example: "End-position your constraints"
+        example: "first AND last"
+      after:
+        description: "Text after the highlighted word"
+        required: false
+        example: ""
       body:
-        description: "One-line explanation or example"
-        required: false
-        example: "GPT-5 weights the last instruction heaviest."
-      variant:
-        description: "Visual variant (1, 2, or 3) — changes dashed line angle and circle position"
-        required: false
-        auto: "cycles through 1, 2, 3"
+        description: "One-line explanation"
+        required: true
+        example: "Repeat your most critical constraint at the end."
 
   - type: payoff
     name: "Closing"
     placeholders:
-      heading:
-        description: "Closing/takeaway line"
+      before:
+        description: "Text before the highlighted word"
         required: true
-        example: "Structure beats length. Every time."
-      body:
-        description: "CTA or product mention"
+        example: "Sandwich your"
+      highlight:
+        description: "Key word with red background highlight"
+        required: true
+        example: "constraints"
+      after:
+        description: "Text after the highlighted word"
         required: false
-        example: "Try Prompt Optimizer — link in bio"
+        example: ""
+      body_before:
+        description: "CTA text before highlight"
+        required: false
+        example: "Try"
+      body_highlight:
+        description: "CTA highlighted text"
+        required: false
+        example: "Prompt Optimizer"
+      body_after:
+        description: "CTA text after highlight"
+        required: false
+        example: "- link in bio"

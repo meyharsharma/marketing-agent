@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+{% block title %}Generate{% endblock %}
+
+{% block content %}
+<div class="wizard">
+  <!-- Step indicators -->
+  <ul class="wizard__steps">
+    <li class="wizard__step-dot"></li>
+    <li class="wizard__step-dot"></li>
+    <li class="wizard__step-dot"></li>
+    <li class="wizard__step-dot" id="dot-variant" style="display:none;"></li>
+    <li class="wizard__step-dot"></li>
+  </ul>
+
+  <!-- Step 0: Platform -->
+  <div class="wizard__panel" id="step-platform">
+    <div class="wizard__title">Choose Platform</div>
+    <div class="wizard__subtitle">Where will this content be posted?</div>
+    <div class="select-grid" id="platform-grid"></div>
+  </div>
+
+  <!-- Step 1: Category -->
+  <div class="wizard__panel" id="step-category">
+    <div class="wizard__title">Choose Category</div>
+    <div class="wizard__subtitle">What type of post are you creating?</div>
+    <div class="select-grid" id="category-grid"></div>
+    <div class="mt-2">
+      <button class="btn btn--ghost" onclick="showStep(0)">&larr; Back</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Topic -->
+  <div class="wizard__panel" id="step-topic">
+    <div class="wizard__title">Choose Topic</div>
+    <div class="wizard__subtitle">Pick from the content bank or enter your own</div>
+    <div class="topic-grid" id="topic-grid"></div>
+    <div class="custom-topic" id="custom-topic-wrap" style="display:none;">
+      <label class="custom-topic__label">Or enter a custom topic</label>
+      <input type="text" class="custom-topic__input" id="custom-topic-input"
+             placeholder="e.g. fix my code" oninput="onCustomTopicInput(event)">
+    </div>
+    <div class="mt-2" style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn--ghost" onclick="showStep(1)">&larr; Back</button>
+      <button class="btn btn--primary" id="topic-next-btn" disabled onclick="onTopicNext()">Generate</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Variant (did-you-know only, hidden by default) -->
+  <div class="wizard__panel" id="step-variant" style="display:none;">
+    <div class="wizard__title">Choose Style</div>
+    <div class="wizard__subtitle">Which visual template for this post?</div>
+    <div class="select-grid" id="variant-grid">
+      <div class="select-card" onclick="selectVariant('fact_a', this)">
+        <div class="select-card__name">Phone Mockup</div>
+        <div class="select-card__detail">Black background, phone frame with fact text inside</div>
+      </div>
+      <div class="select-card" onclick="selectVariant('fact_b', this)">
+        <div class="select-card__name">Character</div>
+        <div class="select-card__detail">Charcoal background, character illustration with fact text</div>
+      </div>
+    </div>
+    <div class="mt-2" style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn--ghost" onclick="showStep(2)">&larr; Back</button>
+      <button class="btn btn--primary" id="variant-generate-btn" disabled onclick="onVariantGenerate()">Generate</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Progress / Input -->
+  <div class="wizard__panel" id="step-generate">
+    <div class="progress-panel" id="progress-panel">
+      <div class="spinner"></div>
+      <div class="progress-text" id="progress-text">Starting...</div>
+    </div>
+
+    <div class="input-panel" id="input-panel" style="display:none;">
+      <div class="wizard__title">Optimized Prompt Needed</div>
+      <p class="text-sm text-muted">
+        Paste the optimized version of the prompt from Prompt Optimizer.
+        This will be used as-is on the "Optimized Version" slide.
+      </p>
+      <textarea id="optimized-prompt" placeholder="Paste the optimized prompt here..."></textarea>
+      <button class="btn btn--primary" onclick="submitOptimizedPrompt()">Continue</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

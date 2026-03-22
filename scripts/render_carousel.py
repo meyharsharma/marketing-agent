@@ -317,6 +317,106 @@ FIX_JS = """
 """
 
 
+def _check_slide_generic(page, slide_w, slide_h):
+    """Generic post-render check for any template. Detects off-screen, overlapping, and too-small text."""
+    return page.evaluate("""
+        (args) => {
+            const W = args.w, H = args.h;
+            const issues = [];
+            const sels = '.text-block, .body, .heading, .red, .red-body, .closing-text, .cta-text';
+            const els = document.querySelectorAll(sels);
+            const rects = [];
+
+            for (const el of els) {
+                const r = el.getBoundingClientRect();
+                const fs = parseFloat(window.getComputedStyle(el).fontSize);
+                const cls = el.className || el.tagName;
+
+                if (r.right > W + 2) {
+                    issues.push('OFF-RIGHT: ' + cls + ' right=' + Math.round(r.right) + ' slideW=' + W);
+                }
+                if (r.bottom > H + 2) {
+                    issues.push('OFF-BOTTOM: ' + cls + ' bottom=' + Math.round(r.bottom) + ' slideH=' + H);
+                }
+                if (fs < 18) {
+                    issues.push('TOO-SMALL: ' + cls + ' fontSize=' + Math.round(fs) + 'px');
+                }
+
+                // Check overlap with previously seen elements
+                for (const prev of rects) {
+                    const overlapX = Math.max(0, Math.min(r.right, prev.r) - Math.max(r.left, prev.l));
+                    const overlapY = Math.max(0, Math.min(r.bottom, prev.b) - Math.max(r.top, prev.t));
+                    const overlapArea = overlapX * overlapY;
+                    const myArea = (r.width * r.height) || 1;
+                    if (overlapArea / myArea > 0.15) {
+                        issues.push('OVERLAP: ' + cls + ' overlaps ' + prev.cls + ' by ' + Math.round(overlapArea / myArea * 100) + '%');
+                    }
+                }
+                rects.push({l: r.left, t: r.top, r: r.right, b: r.bottom, cls: cls});
+            }
+            return issues;
+        }
+    """, {"w": slide_w, "h": slide_h}) or []
+
+
+def _auto_fix_generic(page, issues, slide_w, slide_h):
+    """Generic auto-fix for common layout issues. Shrinks fonts and adjusts positions."""
+    page.evaluate("""
+        (args) => {
+            const W = args.w, H = args.h, issues = args.issues;
+
+            for (const issue of issues) {
+                if (issue.startsWith('OFF-RIGHT:')) {
+                    // Shrink .text-block font until it fits
+                    const el = document.querySelector('.text-block');
+                    if (el) {
+                        let fs = parseFloat(window.getComputedStyle(el).fontSize);
+                        while (el.getBoundingClientRect().right > W && fs > 14) {
+                            fs -= 1;
+                            el.style.fontSize = fs + 'px';
+                        }
+                    }
+                }
+                if (issue.startsWith('OFF-BOTTOM:')) {
+                    // Shrink .body font until it fits
+                    const el = document.querySelector('.body') || document.querySelector('.red-body');
+                    if (el) {
+                        let fs = parseFloat(window.getComputedStyle(el).fontSize);
+                        while (el.getBoundingClientRect().bottom > H && fs > 14) {
+                            fs -= 1;
+                            el.style.fontSize = fs + 'px';
+                        }
+                    }
+                }
+                if (issue.startsWith('OVERLAP:')) {
+                    // Move .body down if it overlaps .text-block
+                    const body = document.querySelector('.body');
+                    const textBlock = document.querySelector('.text-block');
+                    if (body && textBlock) {
+                        const tbRect = textBlock.getBoundingClientRect();
+                        const bodyRect = body.getBoundingClientRect();
+                        if (bodyRect.top < tbRect.bottom) {
+                            const shift = tbRect.bottom - bodyRect.top + 8;
+                            const currentTop = parseFloat(window.getComputedStyle(body).top) || 0;
+                            body.style.top = (currentTop + shift) + 'px';
+                        }
+                    }
+                }
+                if (issue.startsWith('TOO-SMALL:')) {
+                    // Bump too-small text to 20px
+                    const sels = '.text-block, .body, .heading, .red, .red-body, .closing-text, .cta-text';
+                    for (const el of document.querySelectorAll(sels)) {
+                        const fs = parseFloat(window.getComputedStyle(el).fontSize);
+                        if (fs < 18) {
+                            el.style.fontSize = '20px';
+                        }
+                    }
+                }
+            }
+        }
+    """, {"w": slide_w, "h": slide_h, "issues": issues})
+
+
 def load_template(template_path: Path) -> dict:
     """Load the template YAML definition."""
     with open(template_path) as f:
@@ -348,7 +448,7 @@ def extract_content_from_markdown(md_text: str) -> dict:
     slides_section = slides_match.group(1)
 
     # Parse ### Slide N — Title blocks
-    slide_pattern = r'^### Slide \d+\s*[-\u2013\u2014]\s*(.+?)\n(.*?)(?=^### Slide|\Z)'
+    slide_pattern = r'^### Slide \d+\s*[-\u2013\u2014,:]\s*(.+?)\n(.*?)(?=^### Slide|\Z)'
     for m in re.finditer(slide_pattern, slides_section, re.MULTILINE | re.DOTALL):
         title = m.group(1).strip()
         body = m.group(2).strip()
@@ -423,6 +523,9 @@ def resolve_slide_list(template: dict, content: dict) -> list:
                     })
         else:
             placeholders = content.get(slide_type, {})
+            # Skip slides with no content data (allows selective rendering)
+            if not placeholders and slide_type not in content:
+                continue
             slides.append({
                 "type": slide_type,
                 "placeholders": placeholders,
@@ -541,21 +644,31 @@ def print_slide_report(report: list):
         if status == "pass":
             print(f"  Slide {slide_num} ({slide_type}): PASS")
         elif status == "fixed":
-            fixes = entry.get("fixes", [])
-            fix_desc = "; ".join(
-                f"{f['role']} reduced from {f.get('from', f.get('fontFrom', '?'))}px"
-                f" to {f.get('to', f.get('fontTo', '?'))}px"
-                for f in fixes
-            )
-            print(f"  Slide {slide_num} ({slide_type}): FIXED - {fix_desc}")
+            generic = entry.get("generic_issues")
+            if generic:
+                fix_desc = "; ".join(generic)
+                print(f"  Slide {slide_num} ({slide_type}): FIXED - {fix_desc}")
+            else:
+                fixes = entry.get("fixes", [])
+                fix_desc = "; ".join(
+                    f"{f['role']} reduced from {f.get('from', f.get('fontFrom', '?'))}px"
+                    f" to {f.get('to', f.get('fontTo', '?'))}px"
+                    for f in fixes
+                )
+                print(f"  Slide {slide_num} ({slide_type}): FIXED - {fix_desc}")
         elif status == "fail":
             has_failures = True
-            fails = entry.get("fails", [])
-            fail_desc = "; ".join(
-                f"{f['role']} still overflows (trim ~{f.get('trimChars', '?')} chars)"
-                for f in fails
-            )
-            print(f"  Slide {slide_num} ({slide_type}): FAIL - {fail_desc}")
+            generic = entry.get("generic_issues")
+            if generic:
+                fail_desc = "; ".join(generic)
+                print(f"  Slide {slide_num} ({slide_type}): FAIL - {fail_desc}")
+            else:
+                fails = entry.get("fails", [])
+                fail_desc = "; ".join(
+                    f"{f['role']} still overflows (trim ~{f.get('trimChars', '?')} chars)"
+                    for f in fails
+                )
+                print(f"  Slide {slide_num} ({slide_type}): FAIL - {fail_desc}")
 
     if has_failures:
         print("  ⚠ Some slides need content trimming — see FAIL entries above.")
@@ -622,30 +735,37 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
             # ── Post-render self-check ──
             # The in-HTML auto-scale scripts have already run.
             # Now check if text still overflows or is unreadable.
-            issues = check_slide(page, slide_type)
+            if slide_type in SLIDE_CHECK_CONFIG:
+                # User-story specific checker
+                issues = check_slide(page, slide_type)
 
-            if issues:
-                # Attempt auto-fix in the live DOM
-                fix_results = fix_slide(page, slide_type)
+                if issues:
+                    fix_results = fix_slide(page, slide_type)
 
-                fixed = [r for r in fix_results if r.get("status") == "fixed"]
-                failed = [r for r in fix_results if r.get("status") == "fail"]
+                    fixed = [r for r in fix_results if r.get("status") == "fixed"]
+                    failed = [r for r in fix_results if r.get("status") == "fail"]
 
-                if failed:
-                    check_report.append({
-                        "slide_num": i + 1,
-                        "slide_type": slide_type,
-                        "status": "fail",
-                        "fails": failed,
-                        "fixes": fixed,
-                    })
-                elif fixed:
-                    check_report.append({
-                        "slide_num": i + 1,
-                        "slide_type": slide_type,
-                        "status": "fixed",
-                        "fixes": fixed,
-                    })
+                    if failed:
+                        check_report.append({
+                            "slide_num": i + 1,
+                            "slide_type": slide_type,
+                            "status": "fail",
+                            "fails": failed,
+                            "fixes": fixed,
+                        })
+                    elif fixed:
+                        check_report.append({
+                            "slide_num": i + 1,
+                            "slide_type": slide_type,
+                            "status": "fixed",
+                            "fixes": fixed,
+                        })
+                    else:
+                        check_report.append({
+                            "slide_num": i + 1,
+                            "slide_type": slide_type,
+                            "status": "pass",
+                        })
                 else:
                     check_report.append({
                         "slide_num": i + 1,
@@ -653,11 +773,37 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
                         "status": "pass",
                     })
             else:
-                check_report.append({
-                    "slide_num": i + 1,
-                    "slide_type": slide_type,
-                    "status": "pass",
-                })
+                # Generic checker for all other templates
+                generic_issues = []
+                for attempt in range(3):
+                    generic_issues = _check_slide_generic(page, width, height)
+                    if not generic_issues:
+                        break
+                    _auto_fix_generic(page, generic_issues, width, height)
+
+                if not generic_issues:
+                    check_report.append({
+                        "slide_num": i + 1,
+                        "slide_type": slide_type,
+                        "status": "pass",
+                    })
+                else:
+                    # Re-check after fixes to see what's left
+                    remaining = _check_slide_generic(page, width, height)
+                    if not remaining:
+                        check_report.append({
+                            "slide_num": i + 1,
+                            "slide_type": slide_type,
+                            "status": "fixed",
+                            "generic_issues": generic_issues,
+                        })
+                    else:
+                        check_report.append({
+                            "slide_num": i + 1,
+                            "slide_type": slide_type,
+                            "status": "fail",
+                            "generic_issues": remaining,
+                        })
 
             # Screenshot (captures the fixed DOM if fixes were applied)
             filename = f"slide_{i + 1:02d}_{slide_type}.png"

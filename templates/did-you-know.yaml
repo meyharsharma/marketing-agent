@@ -19,7 +19,7 @@ style:
     charcoal: "#2D2D2D"
     white: "#FFFFFF"
     coral: "#E93B04"
-  handle: "@PROMPTOPTIMIZER"
+  handle: "@PROMPTOPTIMZR"
 
 slides:
   - type: fact_a

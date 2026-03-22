@@ -12,7 +12,7 @@ dimensions:
 
 notebooklm:
   orientation: square
-  detail: detailed
+  detail: concise
   style_by_type:
     cheat_sheet: professional
     comparison: editorial

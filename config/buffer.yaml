@@ -7,14 +7,14 @@ api:
 
 channels:
   instagram:
-    profile_id: ""  # Auto-filled on first run via GET /profiles.json
+    profile_id: "69b89d3d7be9f8b17162d3cd"  # Auto-filled on first run via GET /profiles.json
 
 image_hosting:
-  provider: "imgur"  # Uses Imgur for public image URLs
-  # Set IMGUR_CLIENT_ID in .env
+  provider: "imgbb"  # Uses imgbb for public image URLs
+  # Set IMGBB_API_KEY in .env (get from https://api.imgbb.com)
 
 scheduling:
-  default_timezone: "America/Los_Angeles"
+  default_timezone: "America/New_York"
 
 category_types:
   single_image: [did-you-know, infographic, prompt-drop]

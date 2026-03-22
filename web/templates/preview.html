@@ -1,0 +1,137 @@
+{% extends "layout.html" %}
+{% block title %}Preview — {{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.25rem;">
+    <a href="/" class="btn btn--ghost" style="padding:0.35rem 0.5rem;">&larr;</a>
+    <h1>{{ post.title }}</h1>
+  </div>
+  <div style="display:flex; gap:0.5rem; align-items:center;">
+    <span class="badge badge--{{ post.frontmatter.category }}">{{ post.frontmatter.category }}</span>
+    <span class="badge badge--{{ post.frontmatter.status }}">{{ post.frontmatter.status }}</span>
+    <span class="text-sm text-muted">{{ post.frontmatter.date }}</span>
+  </div>
+</div>
+
+<div class="preview-layout">
+  <!-- Left: slide images -->
+  <div>
+    {% if post.slide_images %}
+    <div class="carousel">
+      <div class="carousel__track">
+        {% for img in post.slide_images %}
+        <div class="carousel__slide">
+          <img src="/slides/{{ img }}" alt="Slide {{ loop.index }}">
+        </div>
+        {% endfor %}
+      </div>
+      {% if post.slide_images | length > 1 %}
+      <button class="carousel__btn carousel__btn--prev">&#8249;</button>
+      <button class="carousel__btn carousel__btn--next">&#8250;</button>
+      <div class="carousel__dots">
+        {% for img in post.slide_images %}
+        <button class="carousel__dot {% if loop.first %}carousel__dot--active{% endif %}"></button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="card" style="aspect-ratio:1; display:flex; align-items:center; justify-content:center; color:var(--gray-300);">
+      <div class="text-center">
+        <div style="font-size:2rem;">&#9634;</div>
+        <div class="text-sm mt-1">No slides rendered yet</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: content -->
+  <div class="content-panel">
+    <div class="content-section" id="caption-section">
+      <div class="content-section__header">
+        <span class="content-section__title">Caption</span>
+        {% if post.caption %}
+        <button class="copy-btn" onclick="copyText(this, {{ post.caption | tojson }})">Copy</button>
+        {% endif %}
+      </div>
+      {% if post.caption %}
+      <div class="content-section__body" id="caption-body">{{ post.caption }}</div>
+      {% else %}
+      <div class="content-section__body text-muted" id="caption-body">
+        <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 0.5rem;"></div>
+        Generating caption with Claude...
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="content-section" id="hashtags-section" {% if not post.hashtags %}style="display:none;"{% endif %}>
+      <div class="content-section__header">
+        <span class="content-section__title">Hashtags</span>
+        {% if post.hashtags %}
+        <button class="copy-btn" onclick="copyText(this, {{ post.hashtags | tojson }})">Copy</button>
+        {% endif %}
+      </div>
+      <div class="content-section__body content-section__body--mono" id="hashtags-body">{{ post.hashtags }}</div>
+    </div>
+
+    {% if post.image_content %}
+    <div class="content-section">
+      <div class="content-section__header">
+        <span class="content-section__title">Image Content</span>
+        <button class="copy-btn" onclick="copyText(this, {{ post.image_content | tojson }})">Copy</button>
+      </div>
+      <div class="content-section__body">{{ post.image_content }}</div>
+    </div>
+    {% endif %}
+
+    {% if post.alt_text %}
+    <div class="content-section collapsible">
+      <button class="collapsible__toggle" onclick="toggleCollapsible(this)">
+        <span class="collapsible__arrow">&#9654;</span>
+        Alt Text
+      </button>
+      <div class="collapsible__content">
+        <div class="content-section__body">{{ post.alt_text }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="btn-group">
+      <a href="/schedule/{{ post.path }}" class="btn btn--primary">Schedule to Buffer</a>
+      <button class="btn btn--outline" onclick="copyText(this, {{ (post.caption + '\n\n' + post.hashtags) | tojson }})">Copy Caption + Tags</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not post.caption %}
+<script>
+// Poll for caption completion (background generation)
+(function() {
+  const path = {{ post.path | tojson }};
+  const interval = setInterval(async () => {
+    const res = await fetch('/api/post/' + path);
+    const data = await res.json();
+    if (data.caption) {
+      clearInterval(interval);
+      const body = document.getElementById('caption-body');
+      body.textContent = data.caption;
+      body.classList.remove('text-muted');
+      body.style.textAlign = '';
+      // Add copy button
+      const header = document.querySelector('#caption-section .content-section__header');
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.onclick = function() { copyText(btn, data.caption); };
+      header.appendChild(btn);
+    }
+  }, 3000);
+  setTimeout(() => clearInterval(interval), 180000);
+})();
+</script>
+{% endif %}
+{% endblock %}

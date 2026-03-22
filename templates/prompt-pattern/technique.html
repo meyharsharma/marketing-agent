@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide { background-image: url('../prompt-drop/bg_step.png'); }
+    .text-block { left: 180px; }
+    .body { left: 180px; }
+    /* Cover the baked-in "01" on the horizontal line in bg_step.png */
+    /* Red dots at x=881-885 and x=944-948, text between, line at y=129 */
+    .step-cover {
+      position: absolute;
+      top: 116px;
+      right: 120px;
+      width: 92px;
+      height: 28px;
+      z-index: 19;
+      background: #191919;
+      /* Redraw the 1px line through the cover */
+      border-top: none;
+      background-image: linear-gradient(
+        to bottom,
+        #191919 0px, #191919 11px,
+        #c8c8c8 11px, #c8c8c8 12px,
+        #191919 12px, #191919 24px
+      );
+    }
+    .step-number-overlay {
+      position: absolute;
+      top: 56px;
+      right: 56px;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 52px;
+      color: #EF4444;
+      z-index: 21;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="step-cover"></div>
+    <div class="step-number-overlay">{{step_number}}</div>
+    <div class="text-block">{{before}} <span class="red">{{highlight}}</span> {{after}}</div>
+    <div class="body">{{body}}</div>
+  </div>
+</body>
+</html>
