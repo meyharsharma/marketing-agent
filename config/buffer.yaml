@@ -8,6 +8,8 @@ api:
 channels:
   instagram:
     profile_id: "69b89d3d7be9f8b17162d3cd"  # Auto-filled on first run via GET /profiles.json
+  twitter:
+    profile_id: "69b12a217be9f8b171443d85"  # Auto-filled on first run via channel discovery
 
 image_hosting:
   provider: "imgbb"  # Uses imgbb for public image URLs

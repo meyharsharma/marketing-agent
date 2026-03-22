@@ -1,0 +1,196 @@
+id: twitter
+name: X (Twitter)
+
+posting_cadence:
+  posts_per_day: 5
+  slots:
+    early_morning: { time: "7-8am", format: "single_image", purpose: "Scroll-stopper fact" }
+    morning: { time: "9-10am", format: "single_image", purpose: "Prompt drop / utility" }
+    midday: { time: "12-1pm", format: "carousel", purpose: "Educational thread" }
+    afternoon: { time: "3-4pm", format: "single_image_or_carousel", purpose: "Pattern / deep-dive" }
+    evening: { time: "7-8pm", format: "single_image_or_carousel", purpose: "Social proof / story" }
+
+max_images: 4
+
+categories:
+  autopsy:
+    name: "The Prompt Autopsy"
+    format: carousel_images
+    slot: midday
+    frequency: "4x per week"
+    description: >
+      Take a real, bad prompt that most people would write naturally and dissect it
+      slide by slide. Show exactly why it fails, what the model "hears" vs. what the
+      user meant, and then show the optimized version.
+    prompt_template: "prompts/instagram/autopsy.md"
+    carousel_template: "templates/autopsy/"
+    visual_style:
+      background: "Coral/black/cream per slide type"
+      text_color: "White, black, coral -- per slide type"
+      layout: "Each slide is a standalone image (1080x1080) with text overlaid"
+      typography: "Heading: OpenSans Condensed ExtraBold. Body: OpenSans Condensed SemiBold."
+    constraints:
+      slides_min: 5
+      slides_max: 8
+      max_text_per_slide: "~40-60 words max per slide"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    why_it_works: >
+      Visual threads with image carousels drive high engagement on X.
+      Each autopsy demonstrates the core product thesis without feeling like an ad.
+
+  did-you-know:
+    name: "Did You Know"
+    format: single_image
+    slot: early_morning
+    frequency: "5x per week"
+    description: >
+      Surprising facts about how AI models actually process prompts. Short, punchy,
+      shareable. One fact per image. Designed for retweets and quote tweets.
+    prompt_template: "prompts/instagram/did-you-know.md"
+    carousel_template: "templates/did-you-know/"
+    visual_style:
+      background: "Black (#0A0A0A)"
+      text_color: "Coral heading, white body"
+      layout: "Single image 1080x1080. Large fact text top, explanation below, coral sidebar."
+      typography: "Heading: OpenSans Condensed ExtraBold. Body: OpenSans Condensed SemiBold."
+    constraints:
+      max_text: "~30 words -- one fact, one explanation"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    why_it_works: >
+      Low-effort to produce, high shareability. Surprising facts get retweeted.
+      Drives impressions and profile visits.
+
+  prompt-drop:
+    name: "Daily Prompt Drop"
+    format: single_image
+    slot: morning
+    frequency: "4x per week"
+    description: >
+      One polished, ready-to-use prompt template optimized for a specific model.
+      Screenshot-worthy. People bookmark these for their own workflows.
+    prompt_template: "prompts/instagram/prompt-drop.md"
+    carousel_template: "templates/prompt-drop/"
+    visual_style:
+      background: "Coral (#E93B04)"
+      text_color: "Black prompt text, white heading"
+      layout: "Single image 1080x1080. 'DAILY PROMPT DROP' heading, model tag, prompt text."
+      typography: "Heading: OpenSans Condensed ExtraBold. Prompt: OpenSans Condensed SemiBold."
+    constraints:
+      max_text: "~60-80 words -- the prompt itself must be readable"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    why_it_works: >
+      Pure utility. People bookmark and retweet these. High bookmark rate signals value to the algo.
+
+  prompt-pattern:
+    name: "Prompt Pattern"
+    format: carousel_images
+    slot: afternoon
+    frequency: "3x per week"
+    description: >
+      Teach one reusable prompting technique. Educational, deep, bookmark-worthy.
+      Each pattern is a transferable skill the reader can apply immediately.
+    prompt_template: "prompts/instagram/prompt-pattern.md"
+    carousel_template: "templates/prompt-pattern/"
+    visual_style:
+      background: "Coral/black/cream per slide type"
+      text_color: "White, black, coral -- per slide type"
+      layout: "4-6 slide carousel (1080x1080). Pattern name, problem, technique, example, when to use."
+      typography: "Heading: OpenSans Condensed ExtraBold. Body: OpenSans Condensed SemiBold."
+    constraints:
+      slides_min: 4
+      slides_max: 6
+      max_text_per_slide: "~40-60 words max"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    why_it_works: >
+      Educational carousels get bookmarked. Each pattern positions PO as the authority
+      on prompt engineering.
+
+  infographic:
+    name: "Prompt Infographic"
+    format: single_image
+    slot: afternoon
+    frequency: "3x per week"
+    description: >
+      Cheat sheets, tip compilations, comparison charts, and frameworks.
+      Dense, reference-worthy single images designed to be bookmarked and retweeted.
+    prompt_template: "prompts/instagram/infographic.md"
+    carousel_template: "templates/infographic/"
+    notebooklm_integration:
+      notebook_id: "57639ed8-99e9-47c0-b82d-6d9443f88b51"
+      notebook_name: "Prompt Optimizer Research"
+      generation:
+        orientation: square
+        default_detail: detailed
+        style_by_type:
+          cheat_sheet: professional
+          comparison: editorial
+          framework: instructional
+          data_insight: editorial
+      sources:
+        - "Prompt Optimizer model-specific guides (from codebase)"
+        - "OpenAI, Anthropic, Google model documentation"
+        - "Prompt engineering research and community benchmarks"
+      workflow: >
+        1. Set notebook context: notebooklm use <notebook_id>
+        2. Research topic: notebooklm ask "<research question>" --json
+        3. Generate infographic: notebooklm generate infographic --orientation portrait --detail detailed --style <style>
+        4. Wait for completion: notebooklm artifact wait <artifact_id>
+        5. Download: notebooklm download infographic <output_path>
+    visual_style:
+      background: "Black (#0A0A0A)"
+      text_color: "White body, coral accents and headers"
+      layout: "Single image 1080x1350 (portrait). Structured layout with sections, columns, or numbered lists."
+      typography: "Heading: OpenSans Condensed ExtraBold. Body: OpenSans Condensed SemiBold. Labels: OpenSans Condensed Bold."
+    constraints:
+      max_text: "High density -- but must still be readable"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    why_it_works: >
+      Infographics are highly bookmarked. Dense reference material
+      that people screenshot and return to.
+
+  user-story:
+    name: "User Story"
+    format: carousel_images
+    slot: evening
+    frequency: "2x per week"
+    description: >
+      Real stories of people using Prompt Optimizer to solve a problem. Social proof
+      meets education. Shows the product in action through the user's experience.
+    prompt_template: "prompts/instagram/user-story.md"
+    carousel_template: "templates/user-story/"
+    visual_style:
+      background: "Coral/black/cream per slide type"
+      text_color: "White, black, coral -- per slide type"
+      layout: "4-5 slide carousel (1080x1080). Problem, old way, the switch, result, takeaway."
+      typography: "Heading: OpenSans Condensed ExtraBold. Body: OpenSans Condensed SemiBold."
+    constraints:
+      slides_min: 4
+      slides_max: 6
+      max_text_per_slide: "~40-60 words max"
+      caption_max_chars: 280
+      hashtags_recommended: 2
+    sourcing:
+      - "Reach out to active users for testimonials"
+      - "Monitor social mentions and DMs"
+      - "Create a 'submit your story' form"
+      - "Internal team use cases (dogfooding)"
+      - "Beta tester feedback"
+    why_it_works: >
+      Social proof drives trust. User stories show real outcomes.
+      The carousel format lets the story unfold like a narrative.
+
+global_guidelines:
+  - "X rewards boldness and brevity -- the hook must land in the first few words"
+  - "Carousels are limited to 4 images -- select the strongest slides"
+  - "Educational content outperforms promotional content for growth"
+  - "All post images use the brand color palette: coral, black, cream"
+  - "Keep tweets under 280 chars -- punchy, no filler"
+  - "Each post should deliver standalone value even without visiting the product"
+  - "Product mentions are minimal -- educational first, branded last"
+  - "Use 0-2 hashtags max -- X penalizes hashtag stuffing"
+  - "End tweets with a question or bold statement to drive replies"

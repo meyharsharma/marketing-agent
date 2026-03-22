@@ -65,7 +65,11 @@ async function loadPlatforms() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  platforms.forEach(p => {
+  // Only show platforms that support direct generation (cross-post-only platforms are excluded)
+  const crosspostOnly = ['twitter'];
+  const generatable = platforms.filter(p => !crosspostOnly.includes(p.id));
+
+  generatable.forEach(p => {
     const card = document.createElement('div');
     card.className = 'select-card';
     card.innerHTML = `
@@ -77,12 +81,12 @@ async function loadPlatforms() {
   });
 
   // Add "coming soon" placeholders
-  ['LinkedIn', 'Twitter/X'].forEach(name => {
+  ['Twitter/X', 'LinkedIn'].forEach(name => {
     const card = document.createElement('div');
     card.className = 'select-card select-card--disabled';
     card.innerHTML = `
       <div class="select-card__name">${name}</div>
-      <div class="select-card__detail">Coming soon</div>
+      <div class="select-card__detail">${name === 'Twitter/X' ? 'Via cross-post' : 'Coming soon'}</div>
     `;
     grid.appendChild(card);
   });
@@ -390,6 +394,15 @@ async function submitSchedule(mode) {
       return;
     }
     payload.datetime = `${dateVal} ${timeVal}`;
+  }
+
+  // Include selected slides if slide picker is present
+  const picker = document.getElementById('slide-picker');
+  if (picker) {
+    const checked = picker.querySelectorAll('input[type="checkbox"]:checked');
+    if (checked.length > 0) {
+      payload.slides = Array.from(checked).map(cb => cb.value).join(',');
+    }
   }
 
   // Disable buttons

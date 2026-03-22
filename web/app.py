@@ -361,7 +361,10 @@ def _build_claude_prompt(platform, category, topic, icp, today):
     brand_text = (CONFIG_DIR / "brand.yaml").read_text() if (CONFIG_DIR / "brand.yaml").exists() else ""
     platform_text = (CONFIG_DIR / "platforms" / f"{platform}.yaml").read_text() if (CONFIG_DIR / "platforms" / f"{platform}.yaml").exists() else ""
     icp_text = (CONFIG_DIR / "icps" / f"{icp}.yaml").read_text() if (CONFIG_DIR / "icps" / f"{icp}.yaml").exists() else ""
-    prompt_text = (PROMPTS_DIR / platform / f"{category}.md").read_text() if (PROMPTS_DIR / platform / f"{category}.md").exists() else ""
+    prompt_path = PROMPTS_DIR / platform / f"{category}.md"
+    if not prompt_path.exists():
+        prompt_path = PROMPTS_DIR / "instagram" / f"{category}.md"  # Fallback to shared templates
+    prompt_text = prompt_path.read_text() if prompt_path.exists() else ""
 
     # Load caption-writer skill rules
     caption_skill_path = PROJECT_ROOT / ".claude" / "skills" / "caption-writer" / "SKILL.md"
@@ -1160,7 +1163,12 @@ def schedule_page(rel_path):
     post = parse_post(rel_path)
     if not post:
         return redirect(url_for("index"))
-    return render_template("schedule.html", post=post)
+    # Load platform config for max_images (used by slide picker)
+    platform = post.get("frontmatter", {}).get("platform", "instagram")
+    platforms = scan_platforms()
+    platform_config = platforms.get(platform, {})
+    max_images = platform_config.get("max_images", 10)
+    return render_template("schedule.html", post=post, max_images=max_images)
 
 
 # ── Routes: API ──────────────────────────────────────────────────────
@@ -1370,6 +1378,11 @@ def api_schedule():
 
     cmd = ["python3", str(PROJECT_ROOT / "scripts" / "schedule_post.py"), str(full_path)]
 
+    # Pass selected slides if provided (for Twitter 4-image limit)
+    slides = data.get("slides")
+    if slides:
+        cmd.extend(["--slides", slides])
+
     if mode == "now":
         # Use --schedule with 2 min delay instead of --now
         # Buffer needs time to process image assets before publishing
@@ -1392,6 +1405,77 @@ def api_schedule():
         return jsonify({"error": "Scheduling timed out"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ── Cross-post to another platform ───────────────────────────────────
+
+@app.route("/api/crosspost", methods=["POST"])
+def api_crosspost():
+    """Create a cross-post: copy an existing post to another platform with a new caption."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON body"}), 400
+
+    source_path = data.get("source_path")  # relative path under output/
+    target_platform = data.get("target_platform", "twitter")
+    selected_slides = data.get("slides")  # comma-separated 1-based indices (for carousel limit)
+
+    if not source_path:
+        return jsonify({"error": "source_path is required"}), 400
+
+    source = parse_post(source_path)
+    if not source:
+        return jsonify({"error": "Source post not found"}), 404
+
+    fm = source["frontmatter"]
+    category = fm.get("category", "")
+    topic = fm.get("topic", "")
+    icp = fm.get("icp", "solo-builder")
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Create the target output file
+    output_file = _make_output_file(target_platform, category, source["slug"])
+
+    # Read the source markdown and replace the platform in frontmatter
+    source_full = OUTPUT_DIR / source_path
+    source_text = source_full.read_text()
+
+    # Replace platform in frontmatter
+    target_text = re.sub(
+        r"^(platform:\s*).*$",
+        f"\\1{target_platform}",
+        source_text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+
+    # Remove old caption/hashtags/alt text (will be regenerated)
+    target_text = re.sub(r"\n## Caption\n\n?.*?(?=\n## [^#]|\Z)", "", target_text, flags=re.DOTALL)
+    target_text = re.sub(r"\n## Hashtags\n\n?.*?(?=\n## [^#]|\Z)", "", target_text, flags=re.DOTALL)
+    target_text = re.sub(r"\n## Alt Text\n\n?.*?(?=\n## [^#]|\Z)", "", target_text, flags=re.DOTALL)
+
+    output_file.write_text(target_text)
+
+    # Store selected slides in frontmatter if provided (for scheduling later)
+    if selected_slides:
+        text = output_file.read_text()
+        fm_end = text.index("\n---", 4)
+        text = text[:fm_end] + f'\ntwitter_slides: "{selected_slides}"' + text[fm_end:]
+        output_file.write_text(text)
+
+    # Generate caption in background
+    job_id = str(uuid.uuid4())[:8]
+    with job_lock:
+        jobs[job_id] = {"status": "generating", "caption_status": "generating"}
+
+    thread = threading.Thread(
+        target=_run_claude_caption,
+        args=(job_id, target_platform, category, topic, icp, output_file),
+    )
+    thread.start()
+
+    rel_path = str(output_file.relative_to(OUTPUT_DIR))
+    return jsonify({"success": True, "path": rel_path, "job_id": job_id})
 
 
 # ── Serve generated slide images ─────────────────────────────────────
