@@ -1,0 +1,24 @@
+@font-face {
+  font-family: 'LilitaOne';
+  src: url('../../fonts/LilitaOne-Regular.ttf') format('truetype');
+  font-weight: 400;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1080px;
+  height: 1350px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  width: 1080px;
+  height: 1350px;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  font-family: 'LilitaOne', sans-serif;
+}

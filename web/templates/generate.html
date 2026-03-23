@@ -34,6 +34,17 @@
     <div class="wizard__title">Choose Topic</div>
     <div class="wizard__subtitle">Pick from the content bank or enter your own</div>
     <div class="topic-grid" id="topic-grid"></div>
+    <!-- Daily Prompt dual-input (hidden by default) -->
+    <div id="daily-prompt-inputs" style="display:none;">
+      <label class="custom-topic__label">Raw prompt (what someone would naturally type)</label>
+      <textarea id="raw-prompt-input" class="custom-topic__input"
+                placeholder="e.g. give me hackathon ideas" rows="3"
+                oninput="onDailyPromptInput()"></textarea>
+      <label class="custom-topic__label" style="margin-top:1rem;">Optimized prompt (from Prompt Optimizer)</label>
+      <textarea id="optimized-prompt-input" class="custom-topic__input"
+                placeholder="Paste the optimized prompt here..." rows="6"
+                oninput="onDailyPromptInput()"></textarea>
+    </div>
     <div class="custom-topic" id="custom-topic-wrap" style="display:none;">
       <label class="custom-topic__label">Or enter a custom topic</label>
       <input type="text" class="custom-topic__input" id="custom-topic-input"

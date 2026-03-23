@@ -1,0 +1,13 @@
+prompt:
+  prompt: |
+    # Task
+    Generate 5-10 project ideas for a hackathon.
+
+    # Requirements
+    *  Ideas should be suitable for producing industry-level, first-prize-winning projects.
+    *  Focus on novelty and feasibility within a hackathon timeframe.
+
+    # Output Format
+    *  List each project idea clearly.
+    *  Provide a brief justification for each idea's potential to win.
+    *  Ensure ideas are innovative and distinct.

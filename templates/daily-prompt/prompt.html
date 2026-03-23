@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="base.css">
+  <style>
+    .slide {
+      background-image: url('bg_prompt.png');
+    }
+
+    .prompt-text {
+      position: absolute;
+      top: 110px;
+      left: 82px;
+      width: 916px;
+      height: 1060px;
+      font-family: 'LilitaOne', sans-serif;
+      font-size: 45.9px;
+      font-weight: 400;
+      line-height: 1.45;
+      color: #000000;
+      overflow: hidden;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+  </style>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const el = document.querySelector('.prompt-text');
+      if (!el) return;
+      let size = 45.9;
+      while (el.scrollHeight > el.clientHeight && size > 18) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+      }
+    });
+  </script>
+</head>
+<body>
+  <div class="slide">
+    <div class="prompt-text">{{prompt}}</div>
+  </div>
+</body>
+</html>
