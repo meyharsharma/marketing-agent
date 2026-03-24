@@ -143,14 +143,36 @@ async function loadTopics(platform, category) {
   const data = await api(`/api/topics/${platform}/${category}`);
   const grid = document.getElementById('topic-grid');
   const customWrap = document.getElementById('custom-topic-wrap');
+  const dailyPromptInputs = document.getElementById('daily-prompt-inputs');
   if (!grid) return;
   grid.innerHTML = '';
+
+  // Daily-prompt: show dual textareas instead of topic grid
+  if (category === 'daily-prompt') {
+    grid.style.display = 'none';
+    if (customWrap) customWrap.style.display = 'none';
+    if (dailyPromptInputs) dailyPromptInputs.style.display = 'block';
+    const rawInput = document.getElementById('raw-prompt-input');
+    const optInput = document.getElementById('optimized-prompt-input');
+    if (rawInput) rawInput.value = '';
+    if (optInput) optInput.value = '';
+    const topicNextBtn = document.getElementById('topic-next-btn');
+    if (topicNextBtn) {
+      topicNextBtn.textContent = 'Generate';
+      topicNextBtn.disabled = true;
+    }
+    return;
+  }
+
+  // All other categories: ensure daily-prompt panel is hidden
+  if (dailyPromptInputs) dailyPromptInputs.style.display = 'none';
+  grid.style.display = '';
 
   // Topic label columns vary by category
   const labelMap = {
     'autopsy': { primary: 'bad_prompt', secondary: 'hook' },
     'did-you-know': { primary: 'fact', secondary: 'detail' },
-    'prompt-drop': { primary: 'task', secondary: 'prompt_preview' },
+    'daily-prompt': { primary: 'task', secondary: 'prompt_preview' },
     'prompt-pattern': { primary: 'pattern_name', secondary: 'core_insight' },
     'infographic': { primary: 'title', secondary: 'type' },
     'user-story': { primary: 'persona', secondary: 'problem' },
@@ -220,6 +242,21 @@ function enableTopicNextBtn() {
   if (btn) btn.disabled = !state.topic;
 }
 
+function onDailyPromptInput() {
+  const raw = document.getElementById('raw-prompt-input')?.value.trim();
+  const optimized = document.getElementById('optimized-prompt-input')?.value.trim();
+  if (raw && optimized) {
+    state.topic = raw;
+    state.topicData = { raw_prompt: raw, optimized_prompt: optimized };
+    enableTopicNextBtn();
+  } else {
+    state.topic = null;
+    state.topicData = null;
+    const btn = document.getElementById('topic-next-btn');
+    if (btn) btn.disabled = true;
+  }
+}
+
 // Called when the topic step's "Next" / "Generate" button is clicked
 function onTopicNext() {
   if (!state.topic) return;
@@ -266,6 +303,10 @@ async function startGeneration() {
   };
   if (state.variant) payload.variant = state.variant;
   if (state.topicData) payload.topic_data = state.topicData;
+  if (state.category === 'daily-prompt' && state.topicData) {
+    payload.raw_prompt = state.topicData.raw_prompt;
+    payload.optimized_prompt = state.topicData.optimized_prompt;
+  }
 
   const data = await api('/api/generate', {
     method: 'POST',

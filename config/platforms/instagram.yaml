@@ -60,28 +60,30 @@ categories:
       Low-effort to produce, high shareability. These are the "tell a friend" posts.
       People share surprising facts. Drives impressions and profile visits.
 
-  prompt-drop:
-    name: "Daily Prompt Drop"
+  daily-prompt:
+    name: "Daily Prompt"
     format: single_image
     slot: morning_or_evening
     frequency: "4x per week"
     description: >
-      One polished, ready-to-use prompt template optimized for a specific model.
-      Screenshot-worthy. People save these as references for their own workflows.
-    prompt_template: "prompts/instagram/prompt-drop.md"
-    carousel_template: "templates/prompt-drop/"
+      A before-and-after showcase: the raw prompt someone would naturally type
+      vs. the optimized version from Prompt Optimizer. The optimized prompt is
+      rendered on the slide image; the caption explains the transformation.
+    prompt_template: "prompts/instagram/daily-prompt.md"
+    carousel_template: "templates/daily-prompt/"
     visual_style:
-      background: "Coral (#E93B04)"
-      text_color: "Black prompt text, white heading"
-      layout: "Single image 1080x1080. 'DAILY PROMPT DROP' heading, model tag, prompt text."
-      typography: "Heading: OpenSans Condensed ExtraBold. Prompt: OpenSans Condensed SemiBold."
+      background: "Warm gradient with white card"
+      text_color: "Black prompt text on white card"
+      layout: "Single image 1080x1350. Optimized prompt on branded gradient background."
+      typography: "LilitaOne Regular."
     constraints:
-      max_text: "~60-80 words — the prompt itself must be readable at phone size"
+      max_text: "~60-80 words — the prompt must be readable at phone size"
       caption_max_chars: 2200
       hashtags_recommended: 15
     why_it_works: >
-      Pure utility. People screenshot and save these. High save rate = algo boost.
-      Subtly demonstrates model-specific formatting (XML for Claude, Markdown for GPT).
+      Shows the product's value proposition in one image. People screenshot
+      the optimized prompt for reuse. The raw-vs-optimized contrast in the
+      caption drives curiosity and saves.
 
   prompt-pattern:
     name: "Prompt Pattern"

@@ -326,7 +326,7 @@ def _extract_dyk_fact(md_text):
 
 # Categories where the content bank provides enough data to render
 # slides instantly, without waiting for Claude.
-INSTANT_RENDER_CATEGORIES = {"did-you-know"}
+INSTANT_RENDER_CATEGORIES = {"did-you-know", "daily-prompt"}
 
 
 def _make_output_file(platform, category, slug):
@@ -507,16 +507,43 @@ def _run_generation_instant(job_id, params):
             slide_fact = f"{fact_text}. {detail_text}" if detail_text else fact_text
             variant_key = variant or "fact_a"
             content_data = {variant_key: {"fact": slide_fact}}
+        elif category == "daily-prompt":
+            optimized = params.get("optimized_prompt", topic)
+            raw = params.get("raw_prompt", "")
+            content_data = {"prompt": {"prompt": optimized}}
         else:
             content_data = {}
 
         # Write content YAML
         output_file = _make_output_file(platform, category, slug)
         content_yaml_path = output_file.with_suffix(".content.yaml")
-        content_yaml_path.write_text(yaml.dump(content_data, default_flow_style=False))
+        content_yaml_path.write_text(yaml.dump(content_data, default_flow_style=False, allow_unicode=True))
 
         # Write initial markdown (slide content, no caption yet)
-        md_text = f"""---
+        if category == "daily-prompt":
+            optimized = params.get("optimized_prompt", topic)
+            raw = params.get("raw_prompt", "")
+            md_text = f"""---
+platform: {platform}
+category: {category}
+topic: {_yaml_quote(topic)}
+icp: {icp}
+date: {today}
+status: draft
+---
+
+# Daily Prompt: {slug}
+
+## Image Content
+
+**Optimized Prompt:** {optimized}
+
+## Raw Prompt
+
+{raw}
+"""
+        else:
+            md_text = f"""---
 platform: {platform}
 category: {category}
 topic: {_yaml_quote(topic)}
@@ -553,9 +580,16 @@ status: draft
                 jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
 
         # Phase 2: Generate caption in background
+        # For daily-prompt, pass both raw and optimized prompts as the topic
+        # so the caption can contrast them
+        if category == "daily-prompt":
+            caption_topic = f"Raw prompt: {params.get('raw_prompt', '')}\n\nOptimized prompt: {params.get('optimized_prompt', '')}"
+        else:
+            caption_topic = topic
+
         caption_thread = threading.Thread(
             target=_run_claude_caption,
-            args=(job_id, platform, category, topic, icp, output_file),
+            args=(job_id, platform, category, caption_topic, icp, output_file),
             daemon=True,
         )
         caption_thread.start()
@@ -1323,6 +1357,9 @@ def api_topics(platform, category):
     entries = banks.get(category, [])
 
     allows_custom = True
+    # daily-prompt uses dual textareas, not topic cards
+    if category == "daily-prompt":
+        return jsonify({"topics": [], "allows_custom": True})
 
     import random
     if len(entries) > 4:
@@ -1362,6 +1399,8 @@ def api_generate():
 
     variant = data.get("variant")  # "fact_a" or "fact_b" for did-you-know
     topic_data = data.get("topic_data", {})  # Full content bank entry
+    raw_prompt = data.get("raw_prompt", "")
+    optimized_prompt = data.get("optimized_prompt", "")
 
     job_id = str(uuid.uuid4())
     params = {"platform": platform, "category": category, "topic": topic, "icp": icp}
@@ -1369,6 +1408,10 @@ def api_generate():
         params["variant"] = variant
     if topic_data:
         params["topic_data"] = topic_data
+    if raw_prompt:
+        params["raw_prompt"] = raw_prompt
+    if optimized_prompt:
+        params["optimized_prompt"] = optimized_prompt
 
     with job_lock:
         jobs[job_id] = {
@@ -1382,7 +1425,7 @@ def api_generate():
         }
 
     # Route to instant, infographic, or full generation
-    if category in INSTANT_RENDER_CATEGORIES and topic_data:
+    if category in INSTANT_RENDER_CATEGORIES and (topic_data or category == "daily-prompt"):
         target = _run_generation_instant
     elif category == "infographic":
         target = _run_generation_infographic

@@ -1,0 +1,28 @@
+name: Daily Prompt
+description: Single image showcasing an optimized prompt from Prompt Optimizer
+category: daily-prompt
+platform: instagram
+
+dimensions:
+  width: 1080
+  height: 1350
+
+slides:
+  - type: prompt
+    name: "Prompt"
+    placeholders:
+      prompt:
+        description: "The full optimized prompt text to display on the card"
+        required: true
+        example: |
+          # Task
+          Generate 5-10 project ideas for a hackathon.
+
+          # Requirements
+          *  Ideas should be suitable for producing industry-level, first-prize-winning projects.
+          *  Focus on novelty and feasibility within a hackathon timeframe.
+
+          # Output Format
+          *  List each project idea clearly.
+          *  Provide a brief justification for each idea's potential to win.
+          *  Ensure ideas are innovative and distinct.
