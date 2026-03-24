@@ -95,7 +95,7 @@ One paragraph describing the image for screen readers:
 - Background color
 - Text content (what it says)
 - Layout and visual elements
-- Branding (@PROMPTOPTIMZR handle)
+- Branding (@PROMPTOPTIMIZER handle)
 
 ## Category-Specific Notes
 

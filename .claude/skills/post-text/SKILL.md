@@ -101,24 +101,43 @@ Generate text that appears ON the slide images. This text gets rendered into PNG
 
 **Dimensions:** 1080x1350px (notebook on coral/cream/black backgrounds)
 **Font:** PaytoneOne 118px for hook title / OpenSans 34px for body
-**Slides:** hook + old_way + the_switch + result + payoff + cta (5-6 total)
+**Slides:** hook + old_way + the_switch + result + payoff + cta (6 total)
 **Template:** `templates/user-story/`
 
 ### Slide text limits
 | Slide | Field | Max | Notes |
 |-------|-------|-----|-------|
-| hook | `hook_title` | 50 characters | Large text inside notebook. Short punchy problem statement |
-| old_way | `body_text` | 150 characters | What they were doing before. Third person |
-| the_switch | `body_text` | 150 characters | The moment they tried Prompt Optimizer |
-| result | `body_text` | 120 characters | The outcome |
-| result | `quote_text` | 80 characters | Optional direct quote |
-| payoff | `body_text` | 120 characters | The lesson/takeaway |
-| cta | `cta_headline` | 30 characters | CTA headline |
+| hook | `problem` | **25 characters** | Large 118px font in notebook. 3-4 short words MAX. Must not break mid-word. Examples: "20 Minutes. Zero Output." or "I Almost Gave Up." |
+| hook | `hook_line` | 60 characters | Not currently rendered but stored for caption context |
+| old_way | `heading` | 25 characters | ALL CAPS heading above body text |
+| old_way | `body` | 150 characters | What they were doing before. Third person narrative |
+| the_switch | `heading` | 25 characters | ALL CAPS heading |
+| the_switch | `body` | 150 characters | The moment they tried Prompt Optimizer |
+| result | `heading` | 25 characters | ALL CAPS heading |
+| result | `body` | 120 characters | The outcome, time saved, quality difference |
+| result | `quote` | 80 characters | Optional direct quote from user |
+| payoff | `heading` | 25 characters | ALL CAPS heading |
+| payoff | `body` | 120 characters | The lesson or takeaway |
+| cta | `cta_headline` | 30 characters | Hardcoded: "Try it for Free" |
+| cta | `cta_url` | 30 characters | Hardcoded: "promptoptimizr.com" |
+| cta | `cta_sub` | 20 characters | Hardcoded: "link in bio" |
+
+### CRITICAL: Hook text sizing
+The hook `problem` field renders at 118px PaytoneOne inside a ~600px wide notebook. At this size, each character is ~75px wide. **Max 25 characters.** If text is longer, words WILL break mid-word (e.g., "Paragrap hs."). Keep it to 3-4 punchy words.
+
+### Output format
+Claude must output slides with `**Heading:**` and `**Body:**` labels:
+```
+### Slide 1 , The Problem
+**Heading:** 3 Hours. Zero Output.
+**Body:** She needed Claude to help structure a research paper...
+```
 
 ### User story voice
 - Third person, proper narrative sentences
 - Never fabricate testimonials
 - Real experiences only
+- No markdown in the actual text values (no bold, backticks, headers)
 
 ---
 

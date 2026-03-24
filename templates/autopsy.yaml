@@ -21,7 +21,7 @@ style:
     black: "#000000"
     cream: "#FFF8F1"
     white: "#FFFFFF"
-  handle: "@PROMPTOPTIMZR"
+  handle: "@PROMPTOPTIMIZER"
   sidebar_width: 50
   font: OpenSans-CondensedExtraBold.ttf
   font_fallback: OpenSans-CondensedBold.ttf

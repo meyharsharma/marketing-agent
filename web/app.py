@@ -576,7 +576,9 @@ def _md_to_content_yaml(md_text, category):
         return _md_to_prompt_pattern_yaml(md_text), True
     if category == "prompt-drop":
         return _md_to_prompt_drop_yaml(md_text), True
-    # autopsy, user-story: use markdown-based rendering in render_carousel.py
+    if category == "user-story":
+        return _md_to_user_story_yaml(md_text), True
+    # autopsy: uses markdown-based rendering in render_carousel.py
     return None, False
 
 
@@ -787,6 +789,118 @@ def _split_heading(text):
     after = ' '.join(words[best_end:])
 
     return before, highlight, after
+
+
+def _md_to_user_story_yaml(md_text):
+    """Parse user-story markdown into hook/old_way/the_switch/result/payoff/cta content YAML."""
+    slides_match = re.search(r'## Slides\s*\n(.*?)(?=\n## [^#]|\Z)', md_text, re.DOTALL)
+    if not slides_match:
+        return {}
+
+    slide_pattern = r'### Slide \d+\s*[-\u2013\u2014,:]\s*(.+?)\n(.*?)(?=### Slide|\Z)'
+    slides = list(re.finditer(slide_pattern, slides_match.group(1), re.DOTALL))
+    if not slides:
+        return {}
+
+    # Slide type mapping based on title keywords
+    TYPE_MAP = [
+        (["hook", "problem", "struggle"], "hook"),
+        (["old way", "before", "was doing", "regenerate", "copy-paste"], "old_way"),
+        (["switch", "changed", "click", "optimiz"], "the_switch"),
+        (["result", "night and day", "first try", "outcome"], "result"),
+        (["takeaway", "lesson", "payoff", "wasn't", "wasn"], "payoff"),
+        (["cta", "try it", "link in bio"], "cta"),
+    ]
+
+    content = {}
+
+    for i, m in enumerate(slides):
+        title = m.group(1).strip()
+        body_text = m.group(2).strip()
+        title_lower = title.lower()
+
+        # Determine slide type from title
+        slide_type = None
+        for keywords, stype in TYPE_MAP:
+            if any(kw in title_lower for kw in keywords):
+                slide_type = stype
+                break
+
+        # Fallback based on position
+        if not slide_type:
+            positional = ["hook", "old_way", "the_switch", "result", "payoff", "cta"]
+            slide_type = positional[i] if i < len(positional) else "payoff"
+
+        # Parse **Heading:** and **Body:** labels if present
+        heading_match = re.search(r'\*\*(?:Heading|Title)\s*:\*\*\s*(.+?)(?=\n|$)', body_text)
+        body_match = re.search(r'\*\*(?:Body|Text)\s*:\*\*\s*(.+?)(?=\n\*\*|\Z)', body_text, re.DOTALL)
+        quote_match = re.search(r'"([^"]{10,})"', body_text)
+
+        if heading_match:
+            heading = heading_match.group(1).strip()
+            body = body_match.group(1).strip() if body_match else ''
+        else:
+            # No labels — split first line as heading, rest as body
+            lines = [l.strip() for l in body_text.split('\n') if l.strip()]
+            # Remove markdown formatting
+            lines = [re.sub(r'\*\*([^*]+)\*\*', r'\1', l) for l in lines]
+            lines = [l.replace('`', '') for l in lines]
+
+            if slide_type == "hook":
+                # Hook: first line is the problem, rest is hook_line
+                heading = lines[0] if lines else title
+                body = ' '.join(lines[1:]) if len(lines) > 1 else ''
+            else:
+                heading = title
+                body = ' '.join(lines)
+
+        # Clean markdown artifacts
+        heading = re.sub(r'\*\*([^*]*)\*\*', r'\1', heading).strip()
+        heading = heading.replace('`', '').replace('#', '').strip()
+        body = re.sub(r'\*\*([^*]*)\*\*', r'\1', body).strip()
+        body = body.replace('`', '').replace('#', '').strip()
+
+        # Build content for each slide type
+        if slide_type == "hook":
+            # Hook title is 118px font in ~600px wide area — max ~30 chars to avoid word breaks
+            problem_text = heading
+            if len(problem_text) > 30:
+                # Try to cut at a sentence boundary
+                for punct in ['.', '!', '?']:
+                    idx = problem_text[:30].rfind(punct)
+                    if idx > 10:
+                        problem_text = problem_text[:idx + 1]
+                        break
+                else:
+                    problem_text = _truncate_words(problem_text, 30)
+            content["hook"] = {
+                "problem": problem_text,
+                "hook_line": _truncate_words(body, 60) if body else "",
+            }
+        elif slide_type == "cta":
+            content["cta"] = {
+                "cta_headline": "Try it for Free",
+                "cta_url": "promptoptimizr.com",
+                "cta_sub": "link in bio",
+            }
+        else:
+            placeholders = {
+                "heading": heading.upper() if len(heading) < 40 else heading,
+                "body": _truncate_words(body, 150),
+            }
+            if slide_type == "result" and quote_match:
+                placeholders["quote"] = _truncate_words(quote_match.group(1), 80)
+            content[slide_type] = placeholders
+
+    # Ensure CTA always exists
+    if "cta" not in content:
+        content["cta"] = {
+            "cta_headline": "Try it for Free",
+            "cta_url": "promptoptimizr.com",
+            "cta_sub": "link in bio",
+        }
+
+    return content
 
 
 def _run_generation_full(job_id, params):
@@ -1208,10 +1322,7 @@ def api_topics(platform, category):
     banks = parse_content_bank()
     entries = banks.get(category, [])
 
-    # For user-story, always show custom input
     allows_custom = True
-    if category == "user-story":
-        return jsonify({"topics": [], "allows_custom": True})
 
     import random
     if len(entries) > 4:

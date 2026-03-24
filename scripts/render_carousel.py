@@ -168,7 +168,20 @@ CHECK_JS = """
         // Check 3: font size fell below readable threshold
         const tooSmall = fontSize < elCfg.min_size;
 
-        if (overflows || exceedsBounds || tooSmall) {
+        // Check 4: word-break detection — any word broken mid-word across lines
+        let wordBroken = false;
+        const text = el.textContent || '';
+        const words = text.trim().split(/ +/);
+        const longestWord = Math.max(...words.map(w => w.length), 0);
+        // Estimate chars per line at current font size
+        const charWidth = fontSize * 0.65;
+        const containerWidth = containerRect.width || el.clientWidth;
+        const charsPerLine = Math.floor(containerWidth / charWidth);
+        if (longestWord > charsPerLine && charsPerLine > 0) {
+            wordBroken = true;
+        }
+
+        if (overflows || exceedsBounds || tooSmall || wordBroken) {
             issues.push({
                 selector: elCfg.selector,
                 role: elCfg.role,
@@ -225,14 +238,28 @@ FIX_JS = """
         let size = origSize;
         let fixed = false;
 
-        // Step 1: Reduce font size down to min
-        while ((el.scrollHeight > container.clientHeight + 2) && size > elCfg.min_size) {
+        // Step 1: Reduce font size until no overflow AND no word-breaking
+        const text = el.textContent || '';
+        const words = text.trim().split(/ +/);
+        const longestWord = Math.max(...words.map(w => w.length), 0);
+
+        function hasIssue() {
+            if (el.scrollHeight > container.clientHeight + 2) return true;
+            // Check if longest word would break at current font size
+            const charW = size * 0.65;
+            const containerW = container.getBoundingClientRect().width || el.clientWidth;
+            const charsPerLine = Math.floor(containerW / charW);
+            if (longestWord > charsPerLine && charsPerLine > 0) return true;
+            return false;
+        }
+
+        while (hasIssue() && size > elCfg.min_size) {
             size -= elCfg.step;
             el.style.fontSize = size + 'px';
         }
 
         // Check if that resolved it
-        if (el.scrollHeight <= container.clientHeight + 2) {
+        if (!hasIssue()) {
             if (size < origSize) {
                 results.push({
                     selector: elCfg.selector,

@@ -82,7 +82,7 @@ slides:
       cta_url:
         description: "Website URL (displayed smaller)"
         required: true
-        example: "promptoptimizer.com"
+        example: "promptoptimizr.com"
       cta_sub:
         description: "Sub-text below the URL"
         required: false
