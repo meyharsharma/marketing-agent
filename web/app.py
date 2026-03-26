@@ -438,8 +438,8 @@ def _run_claude_caption(job_id, platform, category, topic, icp, output_file):
         claude_prompt = _build_claude_prompt(platform, category, topic, icp, today)
 
         result = subprocess.run(
-            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1"],
-            capture_output=True, text=True, timeout=180, cwd=str(PROJECT_ROOT),
+            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1", "--allowedTools", ""],
+            capture_output=True, text=True, timeout=180, cwd="/tmp",
         )
 
         if result.returncode != 0:
@@ -956,8 +956,8 @@ def _run_generation_full(job_id, params):
         claude_prompt = _build_claude_prompt(platform, category, topic, icp, today)
 
         result = subprocess.run(
-            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1"],
-            capture_output=True, text=True, timeout=180, cwd=str(PROJECT_ROOT),
+            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1", "--allowedTools", ""],
+            capture_output=True, text=True, timeout=180, cwd="/tmp",
         )
 
         if result.returncode != 0:
