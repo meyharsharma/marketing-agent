@@ -154,6 +154,8 @@ def parse_content_bank():
                 # Only strip surrounding quotes if the cell is fully quoted
                 if len(cell_val) >= 2 and cell_val[0] == '"' and cell_val[-1] == '"':
                     cell_val = cell_val[1:-1]
+                # Strip em dashes — never allowed in post text or captions
+                cell_val = cell_val.replace('\u2014', ',').replace('\u2013', ',')
                 entry[col_name] = cell_val
             entries.append(entry)
         banks[slug] = entries
@@ -374,14 +376,13 @@ def _build_claude_prompt(platform, category, topic, icp, today):
         caption_rules = re.sub(r'^---\n.*?\n---\n*', '', caption_rules, flags=re.DOTALL)
         caption_rules = f"CAPTION WRITING RULES (follow these exactly for the caption, hashtags, and alt text):\n\n{caption_rules}"
 
-    # Inline slide text rules (extracted from post-text skill, kept short to avoid prompt bloat)
-    post_text_rules = """SLIDE TEXT RULES (for the text ON each slide image, NOT the caption):
-- Each slide has a heading (max 30-48 chars) and a body (max 200 chars for technique slides, max 80 chars for hook slides)
-- Every sentence must be COMPLETE. Never cut mid-word or mid-thought. If too long, rewrite shorter
-- No markdown formatting in slide text. No **bold**, no `backticks`, no # headers, no - list markers. Plain text only
-- No em dashes
-- Body text should be 1-3 complete sentences. Concrete and specific
-- Keep heading to 3-5 words. The heading gets split into before/highlight/after for the red highlight effect"""
+    # Load post-text skill rules (controls text rendered ON slide images)
+    post_text_skill_path = PROJECT_ROOT / ".claude" / "skills" / "post-text" / "SKILL.md"
+    post_text_rules = ""
+    if post_text_skill_path.exists():
+        post_text_rules = post_text_skill_path.read_text()
+        post_text_rules = re.sub(r'^---\n.*?\n---\n*', '', post_text_rules, flags=re.DOTALL)
+        post_text_rules = f"SLIDE TEXT RULES (follow these exactly for the text ON each slide image, NOT the caption):\n\n{post_text_rules}"
 
     autopsy_note = ""
     if category == "autopsy":
@@ -503,6 +504,9 @@ def _run_generation_instant(job_id, params):
         if category == "did-you-know":
             fact_text = topic_data.get("fact", topic)
             detail_text = topic_data.get("detail", "")
+            # Strip em dashes — never allowed in post text
+            fact_text = fact_text.replace('\u2014', ',').replace('\u2013', ',')
+            detail_text = detail_text.replace('\u2014', ',').replace('\u2013', ',')
             # Combine fact + detail for the slide text
             slide_fact = f"{fact_text}. {detail_text}" if detail_text else fact_text
             variant_key = variant or "fact_a"
