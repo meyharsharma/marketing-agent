@@ -35,7 +35,7 @@ body {
   right: 100px;
   font-weight: 700;
   font-size: 90px;
-  line-height: 1.15;
+  line-height: 1.25;
   color: #FFFFFF;
   z-index: 10;
 }
@@ -43,7 +43,7 @@ body {
 .text-block .red {
   background: #EF4444;
   border-radius: 12px;
-  padding: 2px 18px;
+  padding: 8px 18px 12px;
   display: inline;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;

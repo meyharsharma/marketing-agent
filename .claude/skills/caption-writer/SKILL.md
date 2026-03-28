@@ -42,10 +42,12 @@ Read these files first:
 - Must be immediately actionable, not theoretical
 
 ### CTA: 2-3 Lines
-The CTA is NOT just "link in bio." It's a mini-bridge that connects the post's lesson to what Prompt Optimizer does. Structure:
+The CTA must feel like a NATURAL extension of the lesson, not an ad bolted on at the end. Structure:
 1. **Save/engage line** (optional): drive saves or comments
-2. **Bridge line**: connect the post topic to Prompt Optimizer's value. Explain how PO helps with the specific problem discussed in the post. This should feel like a natural extension of the lesson, not a generic ad
-3. **Link line**: platform-specific link
+2. **Bridge line**: connect the post topic to what Prompt Optimizer does for this specific problem. The reader should think "oh, that's useful" not "oh, an ad." Write it as a continuation of the insight, not a sales pitch
+3. **Link line**: platform-specific (Instagram: "Link in bio." / X: weave the URL into the bridge sentence)
+
+**NEVER just append** "Prompt Optimizer (https://www.promptoptimizr.com/)" as a standalone line. That reads like spam. Always weave it into a sentence that connects to the post's lesson.
 
 **Instagram examples:**
 ```
@@ -158,7 +160,8 @@ When writing for platforms other than Instagram, adapt the caption to that platf
 ### X (Twitter)
 - **Ideal length:** 200-280 characters (single tweet)
 - **Hard limit:** 280 characters per tweet
-- **Format:** One punchy insight or bold claim. No line breaks. End with a question to drive replies
+- **Format:** One punchy insight or bold claim. End with the CTA woven naturally into the last sentence
+- **CTA:** Weave the link naturally into the closing sentence. NEVER just append "Prompt Optimizer (url)" at the end. Instead write something like: "Prompt Optimizer handles this automatically, try it free: https://www.promptoptimizr.com/" or "That's what Prompt Optimizer does in one click: https://www.promptoptimizr.com/"
 - **Hashtags:** 0-2 max, at the end only
 - **Thread option:** For deeper content, write a 3-5 tweet thread. First tweet is the hook. Number them (1/, 2/, etc.). Each tweet under 280 chars
 

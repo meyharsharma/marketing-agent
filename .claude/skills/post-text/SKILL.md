@@ -90,10 +90,36 @@ Generate text that appears ON the slide images. This text gets rendered into PNG
 **Slides:** 1 (fact_a = phone mockup, fact_b = character illustration)
 **Template:** `templates/did-you-know/`
 
+### What to generate
+Given a topic, write a fact that makes someone stop scrolling and think "wait, really?"
+
+1. **Sentence 1**: The surprising fact. Bold, specific, concrete.
+2. **Sentence 2**: Why it matters or what to do about it. This is the payoff.
+3. Total: **80-140 characters**. Aim for ~100-120 chars. Too short feels thin, too long overflows.
+
 ### Text limits
-- **fact**: Max **150 characters**. The fact + detail combined
-- Text is centered in a constrained area (480px wide for phone, similar for character)
-- 1-2 sentences: the surprising fact + one line of why it matters
+- **fact**: **80-140 characters** target range. Hard max 150.
+- Text is bold (MontserratEB 800) centered in a constrained area
+- Auto-scales: short text grows bigger, long text shrinks. But 80-140 is the sweet spot for readability.
+- MUST be exactly 2 sentences. Not 1 (too thin), not 3 (too long).
+- No em dashes. No markdown formatting.
+
+### Output format
+Output as markdown with an ## Image Content section:
+```
+## Image Content
+
+[The 2-sentence fact text, 80-140 characters, plain text, no labels]
+```
+
+### Examples (good — engaging, 2 sentences, right length)
+- "Claude was trained to read XML tags as structure. Wrap your instructions in them and watch accuracy jump." (105 chars)
+- "GPT-4o weights the last instruction 3x more than the first. Put your most critical constraint at the end." (106 chars)
+- "Adding 4 words of role context saves 37% of tokens on average. The model stops hedging and commits." (99 chars)
+
+### Examples (bad)
+- "AI models weight the end of your prompt heaviest." (49 chars — too short, only 1 sentence, no payoff)
+- "Negative instructions backfire. Saying 'don't be formal' makes models think about formality. Saying 'be conversational' works better because it gives a target, not an avoidance." (177 chars — 3 sentences, way over limit)
 
 ---
 

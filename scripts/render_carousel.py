@@ -32,6 +32,36 @@ SLIDE_HEIGHT = 1080
 # this check catches cases where text *still* overflows at those minimums.
 
 SLIDE_CHECK_CONFIG = {
+    "fact_a": {
+        "elements": [
+            {
+                "selector": ".fact-text",
+                "role": "fact",
+                "default_size": 34,
+                "min_size": 15,
+                "step": 1,
+                "must_be_above": ".handle",
+            },
+        ],
+        "container": ".slide",
+        "notebook": ".slide",
+        "max_notebook_grow": 0,
+    },
+    "fact_b": {
+        "elements": [
+            {
+                "selector": ".fact-text",
+                "role": "fact",
+                "default_size": 36,
+                "min_size": 15,
+                "step": 1,
+                "must_be_above": ".handle",
+            },
+        ],
+        "container": ".slide",
+        "notebook": ".slide",
+        "max_notebook_grow": 0,
+    },
     "hook": {
         "elements": [
             {
@@ -181,7 +211,17 @@ CHECK_JS = """
             wordBroken = true;
         }
 
-        if (overflows || exceedsBounds || tooSmall || wordBroken) {
+        // Check 5: must_be_above — element bottom must not overlap target element
+        let overlapsTarget = false;
+        if (elCfg.must_be_above) {
+            const target = document.querySelector(elCfg.must_be_above);
+            if (target) {
+                const targetTop = target.getBoundingClientRect().top;
+                overlapsTarget = elRect.bottom > targetTop - 10;
+            }
+        }
+
+        if (overflows || exceedsBounds || tooSmall || wordBroken || overlapsTarget) {
             issues.push({
                 selector: elCfg.selector,
                 role: elCfg.role,
@@ -245,6 +285,11 @@ FIX_JS = """
 
         function hasIssue() {
             if (el.scrollHeight > container.clientHeight + 2) return true;
+            // Check must_be_above constraint
+            if (elCfg.must_be_above) {
+                const target = document.querySelector(elCfg.must_be_above);
+                if (target && el.getBoundingClientRect().bottom > target.getBoundingClientRect().top - 10) return true;
+            }
             // Check if longest word would break at current font size
             const charW = size * 0.65;
             const containerW = container.getBoundingClientRect().width || el.clientWidth;

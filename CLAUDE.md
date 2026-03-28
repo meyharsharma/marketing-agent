@@ -2,50 +2,72 @@
 
 ## Required Skills
 
-These skills MUST be used at the right time. Do not skip them.
+Skills are invoked by the Claude CLI running from the project directory with `--max-turns 5`. Each skill is invoked at a specific step — never combine them in one call.
 
-| Skill | When to Use |
-|-------|-------------|
-| **`caption-writer`** | ALWAYS when writing the social media caption (the text that accompanies the post, NOT the text on the slide images). Also for hashtags and alt text. Contains voice rules, platform-specific lengths, and banned patterns. |
-| **`skill-creator`** | When creating or iterating on a new skill. |
-| **`notebooklm`** | When generating infographic content. Research via NotebookLM, generate image, download. |
+| Skill | When to Invoke | What It Does |
+|-------|---------------|--------------|
+| **`post-text`** | Step 2: after user picks a topic | Generates the text ON the slide images. Has category-specific rules (character limits, heading splits, formatting). |
+| **`caption-writer`** | Step 3: after slides are rendered | Writes the caption, hashtags, and alt text that accompany the post. Voice rules, platform lengths, banned patterns. |
+| **`notebooklm`** | Step 2 (infographic only) | Generates the infographic image via NotebookLM research + generation. |
+| **`skill-creator`** | When creating or iterating on a skill | Creates new skills, runs evals, benchmarks. |
 
-## Generation Workflow
+## Generation Workflow (4 Steps)
 
-### 1. Parse the Request
-- **Category**: `autopsy`, `did-you-know`, `prompt-drop`, `prompt-pattern`, `infographic`, `user-story`
-- **Topic**: subject to build the post around
-- **ICP**: audience profile (default: `solo-builder`)
-- **Platform**: which platform (ask if not specified)
+### Step 1: Generate Topic Ideas
+User picks a category on the frontend. Claude generates 4-6 **fresh, original** topic ideas based on the category style. Content bank (`content-strategy.md`) provides style examples, not recycled topics.
 
-### 2. Load Context
-Read these before generating anything:
-1. `config/brand.yaml` — product info, voice, differentiators
-2. `config/platforms/{platform}.yaml` — platform constraints, category rules
-3. `config/icps/{icp}.yaml` — target audience profile
-4. `prompts/{platform}/{category}.md` — exact output structure
+- API: `GET /api/topics/{platform}/{category}`
+- Claude runs from project directory with `--max-turns 5`
+- Falls back to content bank sampling if Claude fails
 
-### 3. Generate Content
-Follow the prompt template structure exactly. For interactive categories (e.g. `autopsy`), generate initial content then pause and ask the user for the optimized prompt from Prompt Optimizer before completing. The text on slide images comes from the prompt template. The outer caption that accompanies the post uses the **caption-writer skill**.
+### Step 2: Generate Slide Content (post-text skill)
+User picks a topic and clicks Generate. Claude is invoked with the **post-text skill** to generate ONLY the slide text.
 
-### 4. Save Output
-Save to `output/{platform}/{category}/{YYYY-MM-DD}_{slug}.md` using the standard frontmatter + sections format. If file exists, append a number (`-2`, `-3`).
+- Prompt includes: topic, ICP, brand config, category prompt template
+- Does NOT include caption-writer — captions are a separate step
+- Claude reads the post-text SKILL.md and follows category-specific rules
+- Output: markdown with YAML frontmatter + ## Slides section
+- Parsed by `_md_to_*_yaml()` functions into content YAML
+- For **autopsy**: pauses after this step, asks user for the optimized prompt from Prompt Optimizer
 
-### 5. Render Slides
+### Step 3: Render Slides + Generate Caption (caption-writer skill)
+Slides are rendered from the content YAML, then Claude is invoked with the **caption-writer skill** to write the caption.
+
 ```bash
+# Rendering (automatic)
 python3 scripts/render_carousel.py templates/{category}.yaml content.yaml [slug]
 ```
-Output: `generated_slides/{slug}/` with one PNG per slide.
 
-For infographics: use `/notebooklm` skill (NotebookLM generation, not render_carousel.py).
+- Self-check runs during rendering (overflow, word-breaks, font sizing)
+- Caption generation runs in background after slides are ready
+- Caption prompt includes the generated slide content as context
+- For **infographics**: image comes from NotebookLM, caption from caption-writer skill
 
-### 6. Schedule (Optional)
+### Step 4: Self-Check Pipeline
+Runs automatically during slide rendering:
+- Detects text overflow, word-breaking, too-small fonts
+- Auto-fixes by reducing font size or growing notebook area
+- Reports PASS/FIXED/FAIL per slide
+
+### Schedule (Optional)
 ```bash
 python3 scripts/schedule_post.py <markdown_file> --schedule "YYYY-MM-DD HH:MM"
 python3 scripts/schedule_post.py <file> --queue    # Add as draft
 python3 scripts/schedule_post.py <file> --now       # Post immediately
+python3 scripts/schedule_post.py <file> --slides "1,3,5,7"  # Select specific slides (for Twitter 4-image limit)
 ```
-Requires `BUFFER_ACCESS_TOKEN` and `IMGBB_API_KEY` in `.env`.
+Requires `BUFFER_ACCESS_TOKEN` in `.env`. Images uploaded to GitHub `media-assets` branch.
+
+## Categories
+
+| Category | Format | Slide Template | Special Behavior |
+|----------|--------|---------------|-----------------|
+| `autopsy` | carousel (5-8 slides) | `templates/autopsy/` | Pauses for user's optimized prompt |
+| `did-you-know` | single image | `templates/did-you-know/` | Instant render from content bank, caption in background |
+| `daily-prompt` | single image | `templates/daily-prompt/` | Instant render from user input (raw + optimized prompts) |
+| `prompt-pattern` | carousel (5-6 slides) | `templates/prompt-pattern/` | Heading split into before/highlight/after for red highlight |
+| `user-story` | carousel (6 slides) | `templates/user-story/` | Third person voice, never fabricate testimonials |
+| `infographic` | single image | NotebookLM generated | 3-7 main points max, concise and legible |
 
 ## Output Markdown Format
 
@@ -53,7 +75,7 @@ Requires `BUFFER_ACCESS_TOKEN` and `IMGBB_API_KEY` in `.env`.
 ---
 platform: instagram
 category: autopsy
-topic: "fix my code"
+topic: 'fix my code'
 icp: solo-builder
 date: 2026-03-14
 status: draft
@@ -66,35 +88,41 @@ status: draft
 [content]
 
 ## Caption
-[caption text — use caption-writer skill]
+[caption text — generated by caption-writer skill]
 
 ## Hashtags
-[hashtags — use caption-writer skill]
+[hashtags — generated by caption-writer skill]
 
 ## Alt Text
-[descriptions — use caption-writer skill]
+[descriptions — generated by caption-writer skill]
 ```
 
 ## Rules
 
-1. **Always read configs before generating.** Config files are source of truth.
-2. **Follow prompt template structure exactly.**
-3. **Use the caption-writer skill for ALL captions.** Never write captions without it.
+1. **Skills are invoked separately.** Post-text for slides, caption-writer for captions. Never combine.
+2. **Always read configs before generating.** Config files are source of truth.
+3. **Follow prompt template structure exactly.** Each category has specific rules in `prompts/{platform}/{category}.md`.
 4. **For autopsy posts:** the optimized prompt comes from the user. Always pause and ask.
 5. **For user stories:** never fabricate testimonials. Real experiences only.
-6. **For infographics:** use the notebooklm skill.
+6. **For infographics:** use the notebooklm skill. Keep it simple: 3-7 points, 2-3 lines subtext each.
+7. **No em dashes** in any generated text (slides or captions). Use commas, periods, or semicolons.
+8. **No markdown formatting** on slide text. No `**bold**`, no backticks, no headers, no list markers.
+9. **YAML frontmatter quoting:** use single-quote escaping for topic values containing quotes.
 
 ## Web UI
 
-**Start:** `python3 web/app.py` (http://localhost:5000)
+**Start:** `python3 web/app.py` (http://localhost:5000) or `python3 web/app.py --port 5001`
 
-- `web/app.py` — Flask routes, config loading, generation logic
+- `web/app.py` — Flask routes, config loading, phased generation logic
 - `web/static/` — CSS + JS
 - `web/templates/` — Jinja2 templates
 
 Generation modes:
-- **Instant** (did-you-know): Renders slide from content bank (~3s), caption via Claude in background
-- **Full** (other categories): `claude -p --max-turns 1`, then renders slides
+- **Instant** (did-you-know, daily-prompt): Renders slide immediately, caption via caption-writer skill in background
+- **Phased** (autopsy, prompt-pattern, user-story): Step 2 (post-text skill) -> render -> Step 3 (caption-writer skill in background)
+- **Infographic**: NotebookLM generates image -> post-process -> caption-writer skill in background
+
+Claude CLI calls run from **PROJECT_ROOT** with `--max-turns 5` so skills are properly invoked.
 
 ## Playwright Self-Check (MANDATORY)
 
@@ -114,6 +142,8 @@ Generation modes:
 | Output posts | `output/{platform}/{category}/` |
 | Slide images | `generated_slides/{slug}/` |
 | Carousel templates | `templates/{name}.yaml` + `templates/{name}/` |
-| Content bank | `content-strategy.md` |
+| Content bank (style examples) | `content-strategy.md` |
 | Web UI | `web/` |
-| Skills | `.claude/skills/` |
+| Skills | `.claude/skills/post-text/`, `.claude/skills/caption-writer/` |
+| Scheduling | `scripts/schedule_post.py` |
+| Slide rendering | `scripts/render_carousel.py` |

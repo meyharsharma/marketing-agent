@@ -328,7 +328,7 @@ def _extract_dyk_fact(md_text):
 
 # Categories where the content bank provides enough data to render
 # slides instantly, without waiting for Claude.
-INSTANT_RENDER_CATEGORIES = {"did-you-know", "daily-prompt"}
+INSTANT_RENDER_CATEGORIES = {"daily-prompt"}
 
 
 def _make_output_file(platform, category, slug):
@@ -358,67 +358,79 @@ def _render_slides(category, template_yaml, content_source, slug):
     return True, None
 
 
-def _build_claude_prompt(platform, category, topic, icp, today):
-    """Build the full prompt string for Claude CLI."""
+def _run_claude(prompt, timeout=180):
+    """Run Claude CLI from project directory with skills enabled. Returns (success, stdout, stderr)."""
+    result = subprocess.run(
+        ["claude", "-p", prompt, "--output-format", "text", "--max-turns", "5"],
+        capture_output=True, text=True, timeout=timeout, cwd=str(PROJECT_ROOT),
+    )
+    stdout = result.stdout.strip()
+    # Strip code fences Claude sometimes wraps output in
+    stdout = re.sub(r'^```(?:markdown)?\s*\n', '', stdout)
+    stdout = re.sub(r'\n```\s*$', '', stdout)
+    # Strip any leading non-frontmatter text before ---
+    if '\n---\n' in stdout and not stdout.startswith('---'):
+        idx = stdout.index('---')
+        stdout = stdout[idx:]
+    # Strip em dashes globally
+    stdout = stdout.replace('\u2014', ',').replace('\u2013', ',')
+    # Strip Claude's meta-commentary (character counts, explanations after the content)
+    stdout = re.sub(r'\n\*\*Character count:\*\*.*$', '', stdout, flags=re.DOTALL)
+    stdout = re.sub(r'\n\*\*Why this works:\*\*.*$', '', stdout, flags=re.DOTALL)
+    stdout = re.sub(r'\n\*\*Heading breakdown.*$', '', stdout, flags=re.DOTALL)
+    return result.returncode == 0, stdout.strip(), result.stderr.strip()
+
+
+def _load_config_texts(platform, icp):
+    """Load brand, platform, and ICP config texts."""
     brand_text = (CONFIG_DIR / "brand.yaml").read_text() if (CONFIG_DIR / "brand.yaml").exists() else ""
     platform_text = (CONFIG_DIR / "platforms" / f"{platform}.yaml").read_text() if (CONFIG_DIR / "platforms" / f"{platform}.yaml").exists() else ""
     icp_text = (CONFIG_DIR / "icps" / f"{icp}.yaml").read_text() if (CONFIG_DIR / "icps" / f"{icp}.yaml").exists() else ""
+    return brand_text, platform_text, icp_text
+
+
+def _build_post_text_prompt(platform, category, topic, icp, today):
+    """Build prompt for Step 2: generate ONLY slide text using the post-text skill."""
+    brand_text, platform_text, icp_text = _load_config_texts(platform, icp)
     prompt_path = PROMPTS_DIR / platform / f"{category}.md"
     if not prompt_path.exists():
-        prompt_path = PROMPTS_DIR / "instagram" / f"{category}.md"  # Fallback to shared templates
+        prompt_path = PROMPTS_DIR / "instagram" / f"{category}.md"
     prompt_text = prompt_path.read_text() if prompt_path.exists() else ""
-
-    # Load caption-writer skill rules
-    caption_skill_path = PROJECT_ROOT / ".claude" / "skills" / "caption-writer" / "SKILL.md"
-    caption_rules = ""
-    if caption_skill_path.exists():
-        caption_rules = caption_skill_path.read_text()
-        caption_rules = re.sub(r'^---\n.*?\n---\n*', '', caption_rules, flags=re.DOTALL)
-        caption_rules = f"CAPTION WRITING RULES (follow these exactly for the caption, hashtags, and alt text):\n\n{caption_rules}"
-
-    # Load post-text skill rules (controls text rendered ON slide images)
-    post_text_skill_path = PROJECT_ROOT / ".claude" / "skills" / "post-text" / "SKILL.md"
-    post_text_rules = ""
-    if post_text_skill_path.exists():
-        post_text_rules = post_text_skill_path.read_text()
-        post_text_rules = re.sub(r'^---\n.*?\n---\n*', '', post_text_rules, flags=re.DOTALL)
-        post_text_rules = f"SLIDE TEXT RULES (follow these exactly for the text ON each slide image, NOT the caption):\n\n{post_text_rules}"
 
     autopsy_note = ""
     if category == "autopsy":
-        autopsy_note = "\n\nIMPORTANT: For this autopsy post, generate everything EXCEPT the optimized prompt slide. Write [AWAITING_OPTIMIZED_PROMPT] as a placeholder for the optimized prompt. Generate all other slides, caption, hashtags, and alt text."
+        autopsy_note = "\n\nIMPORTANT: Generate everything EXCEPT the optimized prompt slide. Write [AWAITING_OPTIMIZED_PROMPT] as a placeholder for the optimized prompt."
 
-    return f"""Generate a {category} post for {platform} about: {topic}
+    return f"""You are generating the SLIDE TEXT for a {category} Instagram post about: {topic}
+
+Use the /post-text skill. Follow its rules for the {category} category exactly.
 
 Target ICP: {icp}
 
-Here is the brand config:
+Brand config:
 ---
 {brand_text}
 ---
 
-Here is the platform config:
+Platform config:
 ---
 {platform_text}
 ---
 
-Here is the ICP profile:
+ICP profile:
 ---
 {icp_text}
 ---
 
-Here is the prompt template with exact instructions:
+Prompt template (follow this structure exactly):
 ---
 {prompt_text}
 ---
 
-CRITICAL: Output ONLY the raw markdown content. Do NOT use any tools, do NOT write files, do NOT ask questions. Just output the complete post as plain text starting with the YAML frontmatter block.
+IMPORTANT: Generate ONLY the slide content. Do NOT generate a caption, hashtags, or alt text.
+Output raw markdown starting with YAML frontmatter, then # Title, then ## Slides with ### Slide N entries.
 
-{caption_rules}
-
-{post_text_rules}
-
-The output must start with --- and end with the last section. Use this frontmatter:
+Use this frontmatter:
 ---
 platform: {platform}
 category: {category}
@@ -427,31 +439,78 @@ icp: {icp}
 date: {today}
 status: draft
 ---
-
-Follow the prompt template structure exactly. Include all sections: Slides (for carousels) or Image Content (for single images), Caption, Hashtags, and Alt Text.{autopsy_note}
+{autopsy_note}
 """
 
 
-def _run_claude_caption(job_id, platform, category, topic, icp, output_file):
-    """Background: generate caption/hashtags/alt text via Claude, then update the markdown."""
+PLATFORM_CAPTION_NOTES = {
+    "instagram": "Platform: Instagram. Use 'Link in bio' for the CTA. Hashtags: 5-10.",
+    "twitter": (
+        "Platform: X (Twitter). Max 280 characters for the caption. "
+        "Weave the CTA naturally into the last sentence with the link: https://www.promptoptimizr.com/ "
+        "Do NOT just append the URL. Do NOT say 'link in bio'. Hashtags: 0-2 max."
+    ),
+}
+
+
+def _build_caption_prompt(platform, category, topic, icp, slide_content):
+    """Build prompt for Step 3: generate ONLY caption using the caption-writer skill."""
+    brand_text, _, icp_text = _load_config_texts(platform, icp)
+    platform_note = PLATFORM_CAPTION_NOTES.get(platform, PLATFORM_CAPTION_NOTES["instagram"])
+
+    return f"""You are writing the caption for a {category} post about: {topic}
+
+{platform_note}
+
+Use the /caption-writer skill. Follow its rules exactly, including the platform-specific adaptations for {platform}.
+
+Target ICP: {icp}
+
+Brand config:
+---
+{brand_text}
+---
+
+ICP profile:
+---
+{icp_text}
+---
+
+Here is the slide content that was generated for this post (use this as context for the caption):
+---
+{slide_content}
+---
+
+Output ONLY these three sections:
+
+## Caption
+
+[caption text]
+
+## Hashtags
+
+[hashtags]
+
+## Alt Text
+
+[alt text]
+"""
+
+
+def _run_caption_generation(job_id, platform, category, topic, icp, output_file, slide_content=""):
+    """Generate caption/hashtags/alt text via Claude caption-writer skill, then update the markdown."""
     try:
-        today = datetime.now().strftime("%Y-%m-%d")
-        claude_prompt = _build_claude_prompt(platform, category, topic, icp, today)
+        if not slide_content:
+            slide_content = output_file.read_text()
 
-        result = subprocess.run(
-            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1", "--allowedTools", ""],
-            capture_output=True, text=True, timeout=180, cwd="/tmp",
-        )
+        caption_prompt = _build_caption_prompt(platform, category, topic, icp, slide_content)
+        ok, claude_output, err = _run_claude(caption_prompt)
 
-        if result.returncode != 0:
+        if not ok:
             with job_lock:
                 jobs[job_id]["caption_status"] = "error"
-                jobs[job_id]["caption_error"] = result.stderr or "Claude CLI failed"
+                jobs[job_id]["caption_error"] = err or "Claude CLI failed"
             return
-
-        claude_output = result.stdout.strip()
-        # Strip em dashes
-        claude_output = claude_output.replace('\u2014', ',').replace('\u2013', ',')
 
         # Extract caption, hashtags, alt text from Claude's output
         caption_match = re.search(r'## Caption\n\n(.+?)(?=\n## |\Z)', claude_output, re.DOTALL)
@@ -507,8 +566,10 @@ def _run_generation_instant(job_id, params):
             # Strip em dashes — never allowed in post text
             fact_text = fact_text.replace('\u2014', ',').replace('\u2013', ',')
             detail_text = detail_text.replace('\u2014', ',').replace('\u2013', ',')
-            # Combine fact + detail for the slide text
+            # Combine fact + detail for the slide text (max 150 chars to fit in phone frame)
             slide_fact = f"{fact_text}. {detail_text}" if detail_text else fact_text
+            if len(slide_fact) > 150:
+                slide_fact = _truncate_words(slide_fact, 150)
             variant_key = variant or "fact_a"
             content_data = {variant_key: {"fact": slide_fact}}
         elif category == "daily-prompt":
@@ -592,7 +653,7 @@ status: draft
             caption_topic = topic
 
         caption_thread = threading.Thread(
-            target=_run_claude_caption,
+            target=_run_caption_generation,
             args=(job_id, platform, category, caption_topic, icp, output_file),
             daemon=True,
         )
@@ -616,12 +677,18 @@ def _md_to_content_yaml(md_text, category):
         return _md_to_prompt_drop_yaml(md_text), True
     if category == "user-story":
         return _md_to_user_story_yaml(md_text), True
+    if category == "did-you-know":
+        return _md_to_dyk_yaml(md_text), True
     # autopsy: uses markdown-based rendering in render_carousel.py
     return None, False
 
 
 def _md_to_prompt_pattern_yaml(md_text):
     """Parse prompt-pattern markdown into hook/technique_N/payoff content YAML."""
+    # Strip code fences if Claude wrapped the output
+    md_text = re.sub(r'```(?:markdown)?\s*\n', '', md_text)
+    md_text = re.sub(r'\n```', '', md_text)
+
     slides_match = re.search(r'## Slides\s*\n(.*?)(?=\n## [^#]|\Z)', md_text, re.DOTALL)
     if not slides_match:
         return {}
@@ -638,29 +705,38 @@ def _md_to_prompt_pattern_yaml(md_text):
         title = m.group(1).strip().lower()
         body_text = m.group(2).strip()
 
-        # Parse **Label:** Value format (Claude often uses this)
-        heading_match = re.search(r'\*\*(?:Heading|Title|Hook|Pattern)\s*:\*\*\s*(.+?)(?=\n|$)', body_text)
-        body_match = re.search(r'\*\*(?:Body|Text)\s*:\*\*\s*(.+?)(?=\n\*\*|\n\n|$)', body_text, re.DOTALL)
+        # Detect which format Claude used for this slide:
+        # Format A: **Heading before:** / **Heading highlight:** / **Heading after:** / **Body:**
+        # Format B: **Before:** / **Highlight:** / **After:** / **Body:**  (heading field labels)
+        # Format C: **Heading:** value / **Body:** value
+        # Format D: **Bold heading**\nBody text (unlabeled)
 
-        # Check for Before/After format
-        before_match = re.search(r'\*\*Before:?\*\*\s*\n?(.+?)(?=\*\*After|\Z)', body_text, re.DOTALL)
-        after_match = re.search(r'\*\*After:?\*\*\s*\n?(.+?)(?=\*\*|\n###|\Z)', body_text, re.DOTALL)
+        h_highlight_match = re.search(r'\*\*(?:Heading )?highlight:\*\* *(.*)', body_text, re.IGNORECASE)
+        body_match = re.search(r'\*\*Body\s*:\*\*\s*(.+?)(?=\n\*\*|\n\n|\Z)', body_text, re.DOTALL)
 
-        if before_match and after_match:
-            # Before/After slide - combine into a single body
-            before_text = before_match.group(1).strip().split('\n')[0].strip()
-            after_text = after_match.group(1).strip().split('\n')[0].strip()
-            bold_lines = [heading_match.group(1).strip()] if heading_match else ['Before vs After']
-            body_only = f'Before: "{before_text}" After: "{after_text}"'
-        elif heading_match:
-            # Labeled format: **Heading:** Value
-            bold_lines = [heading_match.group(1).strip()]
+        if h_highlight_match:
+            # Format A or B: heading split into before/highlight/after fields
+            h_before_match = re.search(r'\*\*(?:Heading )?before:\*\* *(.*)', body_text, re.IGNORECASE)
+            h_after_match = re.search(r'\*\*(?:Heading )?after:\*\* *(.*)', body_text, re.IGNORECASE)
+            before_word = h_before_match.group(1).strip() if h_before_match else ''
+            highlight_word = h_highlight_match.group(1).strip()
+            after_word = h_after_match.group(1).strip() if h_after_match else ''
             body_only = body_match.group(1).strip() if body_match else ''
+            _presplit = (before_word, highlight_word, after_word)
         else:
-            # Unlabeled format: **Bold heading**\nBody text
-            all_bold = re.findall(r'\*\*(.+?)\*\*', body_text)
-            bold_lines = [b for b in all_bold if not re.match(r'^(?:Body|Text|Heading|Before|After)\s*:?', b)]
-            body_only = re.sub(r'\*\*[^*]+\*\*\s*', '', body_text).strip()
+            _presplit = None
+
+            # Format C: **Heading:** value
+            heading_match = re.search(r'\*\*(?:Heading|Title|Hook|Pattern)\s*:\*\*\s*(.+?)(?=\n|$)', body_text)
+
+            if heading_match:
+                bold_lines = [heading_match.group(1).strip()]
+                body_only = body_match.group(1).strip() if body_match else ''
+            else:
+                # Format D: unlabeled — first bold text is heading, rest is body
+                all_bold = re.findall(r'\*\*(.+?)\*\*', body_text)
+                bold_lines = [b for b in all_bold if not re.match(r'^(?:Body|Text|Heading|Before|After|Highlight)\s*:?', b, re.IGNORECASE)]
+                body_only = re.sub(r'\*\*[^*]+\*\*\s*', '', body_text).strip()
         body_lines = []
         for l in body_only.split('\n'):
             l = l.strip()
@@ -675,18 +751,19 @@ def _md_to_prompt_pattern_yaml(md_text):
             if l:
                 body_lines.append(l)
 
-        heading = bold_lines[0] if bold_lines else m.group(1).strip()
-        # Strip label prefixes like "Heading:", "Title:", "Body:"
-        heading = re.sub(r'^(?:Heading|Title|Hook|Pattern)\s*:\s*', '', heading).strip()
-        body = ' '.join(body_lines)
-        # Strip "Body:" prefix from body text
-        body = re.sub(r'^(?:Body|Text|Content)\s*:\s*', '', body).strip()
+        if _presplit:
+            before, highlight, after = _presplit
+            body = ' '.join(body_lines)
+            body = re.sub(r'^(?:Body|Text|Content)\s*:\s*', '', body).strip()
+        else:
+            heading = bold_lines[0] if bold_lines else m.group(1).strip()
+            heading = re.sub(r'^(?:Heading|Title|Hook|Pattern)\s*:\s*', '', heading).strip()
+            body = ' '.join(body_lines)
+            body = re.sub(r'^(?:Body|Text|Content)\s*:\s*', '', body).strip()
+            before, highlight, after = _split_heading(heading)
 
         # Truncate body at word boundary (limits match slide layout capacity)
         body = _truncate_words(body, 200)
-
-        # Split heading into before/highlight/after
-        before, highlight, after = _split_heading(heading)
 
         if i == 0 or 'hook' in title:
             content['hook'] = {
@@ -829,6 +906,52 @@ def _split_heading(text):
     return before, highlight, after
 
 
+def _md_to_dyk_yaml(md_text, variant="fact_a"):
+    """Parse did-you-know markdown into fact_a or fact_b content YAML."""
+    # Strip code fences
+    md_text = re.sub(r'```(?:markdown)?\s*\n', '', md_text)
+    md_text = re.sub(r'\n```', '', md_text)
+
+    # Try to extract from ## Image Content section
+    fact_text = ""
+    img_match = re.search(r'## Image Content\n\n?(.+?)(?=\n## |\n\n\*\*|\Z)', md_text, re.DOTALL)
+    if img_match:
+        raw = img_match.group(1).strip()
+        # Strip **Fact:** label if present
+        raw = re.sub(r'^\*\*Fact:\*\*\s*', '', raw).strip()
+        # Take only first paragraph (stop at blank line or **label**)
+        raw = raw.split('\n\n')[0].strip()
+        # Strip markdown formatting
+        raw = re.sub(r'\*\*([^*]*)\*\*', r'\1', raw)
+        raw = raw.replace('`', '')
+        fact_text = raw
+
+    # Fallback: try ## Slides section
+    if not fact_text:
+        slide_match = re.search(r'### Slide 1.*?\n(.*?)(?=### Slide|\n## |\Z)', md_text, re.DOTALL)
+        if slide_match:
+            raw = slide_match.group(1).strip()
+            # Strip labels
+            raw = re.sub(r'\*\*(?:Fact|Body|Text)\s*:\*\*\s*', '', raw).strip()
+            raw = re.sub(r'\*\*([^*]*)\*\*', r'\1', raw)
+            raw = raw.replace('`', '')
+            fact_text = raw
+
+    # Strip em dashes
+    fact_text = fact_text.replace('\u2014', ',').replace('\u2013', ',')
+
+    # Enforce 150 char limit
+    if len(fact_text) > 150:
+        fact_text = _truncate_words(fact_text, 150)
+
+    # Detect variant from frontmatter or default
+    variant_match = re.search(r'variant:\s*(\w+)', md_text)
+    if variant_match:
+        variant = variant_match.group(1)
+
+    return {variant: {"fact": fact_text}}
+
+
 def _md_to_user_story_yaml(md_text):
     """Parse user-story markdown into hook/old_way/the_switch/result/payoff/cta content YAML."""
     slides_match = re.search(r'## Slides\s*\n(.*?)(?=\n## [^#]|\Z)', md_text, re.DOTALL)
@@ -941,8 +1064,8 @@ def _md_to_user_story_yaml(md_text):
     return content
 
 
-def _run_generation_full(job_id, params):
-    """Full generation for complex categories (autopsy, prompt-pattern, etc.)."""
+def _run_generation_phased(job_id, params):
+    """Phased generation: Step 2 (post-text skill) → render → Step 3 (caption-writer skill)."""
     try:
         platform = params["platform"]
         category = params["category"]
@@ -951,37 +1074,26 @@ def _run_generation_full(job_id, params):
         slug = _slugify(topic)
         today = datetime.now().strftime("%Y-%m-%d")
 
+        # ── Phase 1: Generate slide text via post-text skill ──
         with job_lock:
-            jobs[job_id]["progress"] = "Reading config files..."
+            jobs[job_id]["progress"] = "Generating slide content (post-text skill)..."
 
-        with job_lock:
-            jobs[job_id]["progress"] = "Generating content with Claude..."
+        post_text_prompt = _build_post_text_prompt(platform, category, topic, icp, today)
+        ok, output_text, err = _run_claude(post_text_prompt)
 
-        claude_prompt = _build_claude_prompt(platform, category, topic, icp, today)
-
-        result = subprocess.run(
-            ["claude", "-p", claude_prompt, "--output-format", "text", "--max-turns", "1", "--allowedTools", ""],
-            capture_output=True, text=True, timeout=180, cwd="/tmp",
-        )
-
-        if result.returncode != 0:
+        if not ok:
             with job_lock:
                 jobs[job_id]["status"] = "error"
-                jobs[job_id]["error"] = result.stderr or "Claude CLI returned non-zero exit code"
+                jobs[job_id]["error"] = err or "Claude CLI failed during slide text generation"
             return
-
-        output_text = result.stdout.strip()
-        # Strip em dashes - never allowed in post copy
-        output_text = output_text.replace('\u2014', ',').replace('\u2013', ',')
 
         # Save to output file
         output_file = _make_output_file(platform, category, slug)
         output_file.write_text(output_text)
         rel_path = str(output_file.relative_to(OUTPUT_DIR))
-        # Derive actual slug from filename (may have -2, -3 suffix)
         slug = re.sub(r"^\d{4}-\d{2}-\d{2}_", "", output_file.stem)
 
-        # Check if autopsy needs user input
+        # Check if autopsy needs user input before rendering
         if category == "autopsy" and "[AWAITING_OPTIMIZED_PROMPT]" in output_text:
             with job_lock:
                 jobs[job_id]["status"] = "awaiting_input"
@@ -990,49 +1102,59 @@ def _run_generation_full(job_id, params):
                 jobs[job_id]["slug"] = slug
             return
 
-        # Render slides (skip for infographics — those are generated by NotebookLM)
+        # ── Phase 2: Render slides ──
         with job_lock:
+            jobs[job_id]["progress"] = "Rendering slides..."
             jobs[job_id]["slug"] = slug
 
-        if category == "infographic":
-            # Infographic images come from NotebookLM, not render_carousel.py.
-            # The image path is stored in frontmatter as infographic_image.
-            with job_lock:
-                jobs[job_id]["status"] = "complete"
-                jobs[job_id]["progress"] = "Done! Use /notebooklm to generate the infographic image."
-                jobs[job_id]["output_path"] = rel_path
+        template_yaml = PROJECT_ROOT / "templates" / f"{category}.yaml"
+
+        variant = params.get("variant")
+        content_dict, needs_yaml = _md_to_content_yaml(output_text, category)
+        # For DYK: ensure the content uses the selected variant key
+        if category == "did-you-know" and content_dict and variant:
+            # Re-key the content under the correct variant
+            fact_text = ""
+            for k in list(content_dict.keys()):
+                if "fact" in content_dict[k]:
+                    fact_text = content_dict[k]["fact"]
+                    break
+            if fact_text:
+                content_dict = {variant: {"fact": fact_text}}
+        if needs_yaml and content_dict:
+            content_yaml_path = output_file.with_suffix(".content.yaml")
+            content_yaml_path.write_text(yaml.dump(content_dict, default_flow_style=False, allow_unicode=True))
+            render_source = content_yaml_path
         else:
+            render_source = output_file
+
+        success, warning = _render_slides(category, template_yaml, render_source, slug)
+        if warning:
             with job_lock:
-                jobs[job_id]["progress"] = "Rendering slides..."
+                jobs[job_id]["render_warning"] = warning
 
-            template_yaml = PROJECT_ROOT / "templates" / f"{category}.yaml"
+        # Mark complete (slides ready for preview)
+        with job_lock:
+            jobs[job_id]["status"] = "complete"
+            jobs[job_id]["progress"] = "Done! Writing caption in background..."
+            jobs[job_id]["output_path"] = rel_path
+            jobs[job_id]["caption_status"] = "generating"
+            slides_path = SLIDES_DIR / slug
+            if slides_path.exists():
+                jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
 
-            # For categories with structured templates, convert markdown to content YAML
-            content_dict, needs_yaml = _md_to_content_yaml(output_text, category)
-            if needs_yaml and content_dict:
-                content_yaml_path = output_file.with_suffix(".content.yaml")
-                content_yaml_path.write_text(yaml.dump(content_dict, default_flow_style=False, allow_unicode=True))
-                render_source = content_yaml_path
-            else:
-                render_source = output_file
-
-            success, warning = _render_slides(category, template_yaml, render_source, slug)
-            if warning:
-                with job_lock:
-                    jobs[job_id]["render_warning"] = warning
-
-            with job_lock:
-                jobs[job_id]["status"] = "complete"
-                jobs[job_id]["progress"] = "Done!"
-                jobs[job_id]["output_path"] = rel_path
-                slides_path = SLIDES_DIR / slug
-                if slides_path.exists():
-                    jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
+        # ── Phase 3: Generate caption via caption-writer skill (background) ──
+        caption_thread = threading.Thread(
+            target=_run_caption_generation,
+            args=(job_id, platform, category, topic, icp, output_file, output_text),
+            daemon=True,
+        )
+        caption_thread.start()
 
     except subprocess.TimeoutExpired:
         with job_lock:
             jobs[job_id]["status"] = "error"
-            jobs[job_id]["error"] = "Generation timed out (180s limit)"
+            jobs[job_id]["error"] = "Generation timed out"
     except Exception as e:
         with job_lock:
             jobs[job_id]["status"] = "error"
@@ -1227,7 +1349,7 @@ notebooklm_notebook: {NOTEBOOK_ID}
 
         # Phase 8: Generate caption in background thread
         caption_thread = threading.Thread(
-            target=_run_claude_caption,
+            target=_run_caption_generation,
             args=(job_id, platform, category, topic, icp, output_file),
             daemon=True,
         )
@@ -1276,12 +1398,24 @@ def _continue_generation(job_id, optimized_prompt):
                 cwd=str(PROJECT_ROOT),
             )
 
+        # Mark complete and generate caption in background
         with job_lock:
             jobs[job_id]["status"] = "complete"
-            jobs[job_id]["progress"] = "Done!"
+            jobs[job_id]["progress"] = "Done! Writing caption in background..."
+            jobs[job_id]["caption_status"] = "generating"
             slides_path = SLIDES_DIR / slug
             if slides_path.exists():
                 jobs[job_id]["slides_dir"] = str(slides_path.relative_to(PROJECT_ROOT))
+
+        # Phase 3: Caption via caption-writer skill
+        params = job["params"]
+        caption_thread = threading.Thread(
+            target=_run_caption_generation,
+            args=(job_id, params["platform"], params["category"], params["topic"],
+                  params.get("icp", "solo-builder"), full_path, text),
+            daemon=True,
+        )
+        caption_thread.start()
 
     except Exception as e:
         with job_lock:
@@ -1355,23 +1489,91 @@ def api_categories(platform):
     return jsonify(result)
 
 
+CATEGORY_FIELD_MAP = {
+    "autopsy": {"fields": ["bad_prompt", "hook"], "example": '{"bad_prompt": "fix my code", "hook": "This wastes 90% of the model."}'},
+    "did-you-know": {"fields": ["fact", "detail"], "example": '{"fact": "Claude uses XML, not Markdown", "detail": "Claude responds better to <task> tags"}'},
+    "prompt-pattern": {"fields": ["pattern_name", "core_insight"], "example": '{"pattern_name": "Scope Narrowing", "core_insight": "Narrow scope = better output"}'},
+    "infographic": {"fields": ["title", "type"], "example": '{"title": "The Prompt Checklist", "type": "cheat_sheet"}'},
+    "user-story": {"fields": ["persona", "problem"], "example": '{"persona": "Solo dev building SaaS", "problem": "Spent 20 min per prompt"}'},
+    "daily-prompt": {"fields": ["task"], "example": '{"task": "write a marketing plan"}'},
+}
+
+
+def _generate_topic_ideas(platform, category):
+    """Generate fresh topic ideas via Claude using the post-text skill context."""
+    import random as _random
+
+    # Load category description from platform config
+    platforms = scan_platforms()
+    pdata = platforms.get(platform, {})
+    cat_config = pdata.get("categories", {}).get(category, {})
+    cat_description = cat_config.get("description", "").strip()
+    cat_name = cat_config.get("name", category)
+
+    # Get content bank examples for style reference
+    banks = parse_content_bank()
+    examples = banks.get(category, [])
+    example_text = ""
+    if examples:
+        sample = _random.sample(examples, min(3, len(examples)))
+        example_text = "Here are example topics for style reference (generate NEW ideas, do not copy these):\n"
+        for ex in sample:
+            example_text += f"  {json.dumps(ex)}\n"
+
+    field_info = CATEGORY_FIELD_MAP.get(category, {"fields": ["topic"], "example": '{"topic": "example"}'})
+
+    prompt = f"""Generate 6 original, fresh topic ideas for a "{cat_name}" Instagram post.
+
+Category description: {cat_description}
+
+{example_text}
+
+For each idea, output a JSON object with these fields: {', '.join(field_info['fields'])}
+Example format: {field_info['example']}
+
+Output ONLY a JSON array of 6 objects. No markdown, no explanation, no code fences. Just the raw JSON array.
+"""
+
+    try:
+        ok, stdout, err = _run_claude(prompt, timeout=60)
+        if ok and stdout:
+            # Try to extract JSON array from output
+            json_match = re.search(r'\[.*\]', stdout, re.DOTALL)
+            if json_match:
+                ideas = json.loads(json_match.group())
+                if isinstance(ideas, list) and len(ideas) > 0:
+                    # Add IDs
+                    for i, idea in enumerate(ideas):
+                        idea["id"] = i + 1
+                    return ideas
+    except (json.JSONDecodeError, subprocess.TimeoutExpired, Exception):
+        pass
+
+    return None  # Signal to fall back to content bank
+
+
 @app.route("/api/topics/<platform>/<category>")
 def api_topics(platform, category):
-    banks = parse_content_bank()
-    entries = banks.get(category, [])
+    import random
 
-    allows_custom = True
     # daily-prompt uses dual textareas, not topic cards
     if category == "daily-prompt":
         return jsonify({"topics": [], "allows_custom": True})
 
-    import random
+    # Try generating fresh ideas via Claude
+    ideas = _generate_topic_ideas(platform, category)
+    if ideas:
+        return jsonify({"topics": ideas[:6], "allows_custom": True})
+
+    # Fallback: sample from content bank
+    banks = parse_content_bank()
+    entries = banks.get(category, [])
     if len(entries) > 4:
         selected = random.sample(entries, 4)
     else:
         selected = entries
 
-    return jsonify({"topics": selected, "allows_custom": allows_custom})
+    return jsonify({"topics": selected, "allows_custom": True})
 
 
 @app.route("/api/icps")
@@ -1434,7 +1636,7 @@ def api_generate():
     elif category == "infographic":
         target = _run_generation_infographic
     else:
-        target = _run_generation_full
+        target = _run_generation_phased
 
     thread = threading.Thread(target=target, args=(job_id, params), daemon=True)
     thread.start()
@@ -1627,7 +1829,7 @@ def api_crosspost():
         jobs[job_id] = {"status": "generating", "caption_status": "generating"}
 
     thread = threading.Thread(
-        target=_run_claude_caption,
+        target=_run_caption_generation,
         args=(job_id, target_platform, category, topic, icp, output_file),
     )
     thread.start()

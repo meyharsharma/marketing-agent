@@ -140,12 +140,20 @@ function selectCategory(id, card) {
 
 /* ── Step 3: Topics ──────────────────────────────────────────── */
 async function loadTopics(platform, category) {
-  const data = await api(`/api/topics/${platform}/${category}`);
   const grid = document.getElementById('topic-grid');
   const customWrap = document.getElementById('custom-topic-wrap');
   const dailyPromptInputs = document.getElementById('daily-prompt-inputs');
+  const refreshBtn = document.getElementById('refresh-ideas-btn');
   if (!grid) return;
+
+  // Show loading state while Claude generates ideas
+  grid.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" style="margin:0 auto 0.5rem;"></div><div class="text-sm text-muted">Generating ideas...</div></div>';
+  grid.style.display = '';
+  if (refreshBtn) refreshBtn.style.display = 'none';
+
+  const data = await api(`/api/topics/${platform}/${category}`);
   grid.innerHTML = '';
+  if (refreshBtn) refreshBtn.style.display = category === 'daily-prompt' ? 'none' : '';
 
   // Daily-prompt: show dual textareas instead of topic grid
   if (category === 'daily-prompt') {

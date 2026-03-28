@@ -31,8 +31,13 @@
 
   <!-- Step 2: Topic -->
   <div class="wizard__panel" id="step-topic">
-    <div class="wizard__title">Choose Topic</div>
-    <div class="wizard__subtitle">Pick from the content bank or enter your own</div>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div class="wizard__title">Choose Topic</div>
+        <div class="wizard__subtitle">Pick an idea or enter your own</div>
+      </div>
+      <button class="btn btn--ghost" id="refresh-ideas-btn" style="display:none;" onclick="loadTopics(state.platform, state.category)">Refresh Ideas</button>
+    </div>
     <div class="topic-grid" id="topic-grid"></div>
     <!-- Daily Prompt dual-input (hidden by default) -->
     <div id="daily-prompt-inputs" style="display:none;">
