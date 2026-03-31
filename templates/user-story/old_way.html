@@ -100,13 +100,17 @@
   </div>
 
   <script>
-    const el = document.querySelector('.body-text');
-    const container = document.querySelector('.notebook__content');
-    let size = 34;
-    while (el.scrollHeight > container.clientHeight && size > 20) {
-      size -= 1;
-      el.style.fontSize = size + 'px';
-    }
+    // Auto-scale body text if it overflows
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.body-text');
+      const container = document.querySelector('.notebook__content');
+      let size = 34;
+      while (el.scrollHeight > container.clientHeight && size > 20) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

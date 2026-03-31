@@ -806,6 +806,8 @@ def render_slides(template_path: str, content_path: str, output_slug: str = None
 
             page.goto(f"file://{tmp_file.resolve()}")
             page.wait_for_load_state("networkidle")
+            # Wait for fonts to load so in-HTML auto-scale measures correctly
+            page.evaluate("() => document.fonts.ready")
 
             # ── Post-render self-check ──
             # The in-HTML auto-scale scripts have already run.

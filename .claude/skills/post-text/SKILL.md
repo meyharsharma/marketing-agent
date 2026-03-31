@@ -156,11 +156,11 @@ Claude must output slides with `**Heading:**` and `**Body:**` labels:
 ```
 ### Slide 1 , The Problem
 **Heading:** 3 Hours. Zero Output.
-**Body:** She needed Claude to help structure a research paper...
+**Body:** Priya needed Claude to help structure a research paper...
 ```
 
 ### User story voice
-- Third person, proper narrative sentences
+- Third person with a made-up person name (e.g. Priya, Marcus, Lena), never generic "she/he/they"
 - Never fabricate testimonials
 - Real experiences only
 - No markdown in the actual text values (no bold, backticks, headers)

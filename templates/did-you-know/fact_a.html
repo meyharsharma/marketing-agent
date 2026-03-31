@@ -39,26 +39,29 @@
   </div>
   <script>
     // Auto-scale fact text: must fit between current position and handle
-    const el = document.querySelector('.fact-text');
-    const handle = document.querySelector('.handle');
-    const handleTop = handle.getBoundingClientRect().top;
-    const gap = 15; // minimum gap between text bottom and handle top
-    let size = 34;
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.fact-text');
+      const handle = document.querySelector('.handle');
+      const handleTop = handle.getBoundingClientRect().top;
+      const gap = 15; // minimum gap between text bottom and handle top
+      let size = 34;
 
-    function textFits() {
-      return el.getBoundingClientRect().bottom <= handleTop - gap;
-    }
+      function textFits() {
+        return el.getBoundingClientRect().bottom <= handleTop - gap;
+      }
 
-    // Grow for short text (up to 54px)
-    while (textFits() && size < 54) {
-      size += 1;
-      el.style.fontSize = size + 'px';
-    }
-    // Shrink back until it fits (down to 15px)
-    while (!textFits() && size > 15) {
-      size -= 1;
-      el.style.fontSize = size + 'px';
-    }
+      // Grow for short text (up to 54px)
+      while (textFits() && size < 54) {
+        size += 1;
+        el.style.fontSize = size + 'px';
+      }
+      // Shrink back until it fits (down to 15px)
+      while (!textFits() && size > 15) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

@@ -69,13 +69,16 @@
 
   <script>
     // Auto-scale prompt if it overflows
-    const el = document.querySelector('.prompt-display');
-    const container = document.querySelector('.hook-top');
-    let size = 148;
-    while (el.scrollHeight > container.clientHeight && size > 80) {
-      size -= 4;
-      el.style.fontSize = size + 'px';
-    }
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.prompt-display');
+      const container = document.querySelector('.hook-top');
+      let size = 148;
+      while (el.scrollHeight > container.clientHeight && size > 80) {
+        size -= 4;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

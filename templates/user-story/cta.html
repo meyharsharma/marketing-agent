@@ -99,13 +99,17 @@
   </div>
 
   <script>
-    const el = document.querySelector('.cta-headline');
-    const container = document.querySelector('.notebook__content');
-    let size = 64;
-    while (el.scrollHeight > container.clientHeight * 0.4 && size > 36) {
-      size -= 4;
-      el.style.fontSize = size + 'px';
-    }
+    // Auto-scale CTA headline if it overflows
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.cta-headline');
+      const container = document.querySelector('.notebook__content');
+      let size = 64;
+      while (el.scrollHeight > container.clientHeight * 0.4 && size > 36) {
+        size -= 4;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

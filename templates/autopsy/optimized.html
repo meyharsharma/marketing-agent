@@ -41,12 +41,15 @@
 
   <script>
     // Auto-shrink if content overflows
-    const el = document.querySelector('.prompt-content');
-    let size = 30;
-    while (el.scrollHeight > 680 && size > 20) {
-      size -= 1;
-      el.style.fontSize = size + 'px';
-    }
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.prompt-content');
+      let size = 30;
+      while (el.scrollHeight > 680 && size > 20) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

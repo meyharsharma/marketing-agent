@@ -79,13 +79,16 @@
 
   <script>
     // Auto-scale hook title if it overflows
-    const el = document.querySelector('.hook-title');
-    const container = document.querySelector('.notebook__content');
-    let size = 118;
-    while (el.scrollHeight > container.clientHeight && size > 50) {
-      size -= 4;
-      el.style.fontSize = size + 'px';
-    }
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
+      const el = document.querySelector('.hook-title');
+      const container = document.querySelector('.notebook__content');
+      let size = 118;
+      while (el.scrollHeight > container.clientHeight && size > 50) {
+        size -= 4;
+        el.style.fontSize = size + 'px';
+      }
+    });
   </script>
 </body>
 </html>

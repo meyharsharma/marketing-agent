@@ -365,11 +365,10 @@ def _run_claude(prompt, timeout=180):
         capture_output=True, text=True, timeout=timeout, cwd=str(PROJECT_ROOT),
     )
     stdout = result.stdout.strip()
-    # Strip code fences Claude sometimes wraps output in
-    stdout = re.sub(r'^```(?:markdown)?\s*\n', '', stdout)
-    stdout = re.sub(r'\n```\s*$', '', stdout)
+    # Strip all code fences Claude sometimes wraps output in
+    stdout = re.sub(r'```(?:markdown|yaml)?\s*\n?', '', stdout)
     # Strip any leading non-frontmatter text before ---
-    if '\n---\n' in stdout and not stdout.startswith('---'):
+    if '---' in stdout and not stdout.strip().startswith('---'):
         idx = stdout.index('---')
         stdout = stdout[idx:]
     # Strip em dashes globally

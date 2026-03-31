@@ -25,7 +25,9 @@
     }
   </style>
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
+    // Auto-scale prompt text if it overflows
+    // Wait for fonts so measurements use the real typeface, not fallback
+    document.fonts.ready.then(() => {
       const el = document.querySelector('.prompt-text');
       if (!el) return;
       let size = 45.9;
