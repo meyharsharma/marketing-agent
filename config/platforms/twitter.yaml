@@ -184,6 +184,24 @@ categories:
       Social proof drives trust. User stories show real outcomes.
       The carousel format lets the story unfold like a narrative.
 
+  value-drop:
+    name: "Value Drop"
+    format: text_only
+    slot: morning
+    frequency: "daily"
+    description: >
+      3-4 line text-only tweet that drives curiosity toward Prompt Optimizer.
+      Punchy, insight-led copy. No images. Some tweets include the product link,
+      others are pure value. Claude decides based on the topic.
+    prompt_template: "prompts/twitter/value-drop.md"
+    constraints:
+      max_chars: 280
+      lines: "3-4"
+      hashtags: 0
+    why_it_works: >
+      Text-only tweets feel native on X. Low friction to create, high volume.
+      Builds brand voice and curiosity without the production overhead of images.
+
 global_guidelines:
   - "X rewards boldness and brevity -- the hook must land in the first few words"
   - "Carousels are limited to 4 images -- select the strongest slides"

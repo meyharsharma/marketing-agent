@@ -21,3 +21,4 @@ scheduling:
 category_types:
   single_image: [did-you-know, infographic, prompt-drop]
   carousel: [autopsy, prompt-pattern, user-story]
+  text_only: [value-drop]

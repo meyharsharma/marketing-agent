@@ -297,12 +297,28 @@ def create_buffer_post(token, channel_id, text, image_urls, scheduled_at=None, m
 def update_frontmatter(path, buffer_id, scheduled_at):
     """Update the markdown frontmatter with scheduling info."""
     text = Path(path).read_text()
-    text = re.sub(r"^(status:\s*).*$", r"\1scheduled", text, flags=re.MULTILINE)
 
-    fm_end = text.index("\n---", 4)
-    insert = f'\nbuffer_id: "{buffer_id}"\nscheduled_at: "{scheduled_at}"'
-    text = text[:fm_end] + insert + text[fm_end:]
+    # Parse frontmatter boundaries properly using regex
+    fm_match = re.match(r"^---\n(.+?)\n---", text, re.DOTALL)
+    if not fm_match:
+        print("Warning: No valid frontmatter found, skipping update.")
+        return
 
+    fm_body = fm_match.group(1)
+    after_fm = text[fm_match.end():]
+
+    # Update status
+    fm_body = re.sub(r"^(status:\s*).*$", r"\1scheduled", fm_body, flags=re.MULTILINE)
+
+    # Remove any existing buffer_id/scheduled_at to avoid duplicates
+    fm_body = re.sub(r"^buffer_id:.*\n?", "", fm_body, flags=re.MULTILINE)
+    fm_body = re.sub(r"^scheduled_at:.*\n?", "", fm_body, flags=re.MULTILINE)
+    fm_body = fm_body.rstrip("\n")
+
+    # Append new scheduling info
+    fm_body += f'\nbuffer_id: "{buffer_id}"\nscheduled_at: "{scheduled_at}"'
+
+    text = f"---\n{fm_body}\n---{after_fm}"
     Path(path).write_text(text)
     print(f"Updated frontmatter: status=scheduled, buffer_id={buffer_id}")
 

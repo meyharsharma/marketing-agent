@@ -65,11 +65,7 @@ async function loadPlatforms() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  // Only show platforms that support direct generation (cross-post-only platforms are excluded)
-  const crosspostOnly = ['twitter'];
-  const generatable = platforms.filter(p => !crosspostOnly.includes(p.id));
-
-  generatable.forEach(p => {
+  platforms.forEach(p => {
     const card = document.createElement('div');
     card.className = 'select-card';
     card.innerHTML = `
@@ -80,13 +76,13 @@ async function loadPlatforms() {
     grid.appendChild(card);
   });
 
-  // Add "coming soon" placeholders
-  ['Twitter/X', 'LinkedIn'].forEach(name => {
+  // Add "coming soon" placeholders for platforms not yet configured
+  ['LinkedIn'].forEach(name => {
     const card = document.createElement('div');
     card.className = 'select-card select-card--disabled';
     card.innerHTML = `
       <div class="select-card__name">${name}</div>
-      <div class="select-card__detail">${name === 'Twitter/X' ? 'Via cross-post' : 'Coming soon'}</div>
+      <div class="select-card__detail">Coming soon</div>
     `;
     grid.appendChild(card);
   });
@@ -106,10 +102,15 @@ function selectPlatform(id, card) {
 
 /* ── Step 2: Categories ──────────────────────────────────────── */
 async function loadCategories(platform) {
-  const categories = await api(`/api/categories/${platform}`);
+  let categories = await api(`/api/categories/${platform}`);
   const grid = document.getElementById('category-grid');
   if (!grid) return;
   grid.innerHTML = '';
+
+  // Twitter: only show text-only categories (image-based categories are via cross-post)
+  if (platform === 'twitter') {
+    categories = categories.filter(c => c.format === 'text_only');
+  }
 
   categories.forEach(c => {
     const card = document.createElement('div');
@@ -184,6 +185,7 @@ async function loadTopics(platform, category) {
     'prompt-pattern': { primary: 'pattern_name', secondary: 'core_insight' },
     'infographic': { primary: 'title', secondary: 'type' },
     'user-story': { primary: 'persona', secondary: 'problem' },
+    'value-drop': { primary: 'hook', secondary: 'angle' },
   };
   const labels = labelMap[category] || { primary: 'topic', secondary: '' };
 

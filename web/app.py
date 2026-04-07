@@ -330,6 +330,9 @@ def _extract_dyk_fact(md_text):
 # slides instantly, without waiting for Claude.
 INSTANT_RENDER_CATEGORIES = {"daily-prompt"}
 
+# Text-only categories — no slides, no caption-writer. The generated text IS the post.
+TEXT_ONLY_CATEGORIES = {"value-drop"}
+
 
 def _make_output_file(platform, category, slug):
     """Create a unique output file path, avoiding overwrites."""
@@ -443,7 +446,7 @@ status: draft
 
 
 PLATFORM_CAPTION_NOTES = {
-    "instagram": "Platform: Instagram. Use 'Link in bio' for the CTA. Hashtags: 5-10.",
+    "instagram": "Platform: Instagram. Use 'Link in bio' for the CTA. Hashtags: 3-5, rotated each post.",
     "twitter": (
         "Platform: X (Twitter). Max 280 characters for the caption. "
         "Weave the CTA naturally into the last sentence with the link: https://www.promptoptimizr.com/ "
@@ -711,15 +714,15 @@ def _md_to_prompt_pattern_yaml(md_text):
         # Format D: **Bold heading**\nBody text (unlabeled)
 
         h_highlight_match = re.search(r'\*\*(?:Heading )?highlight:\*\* *(.*)', body_text, re.IGNORECASE)
-        body_match = re.search(r'\*\*Body\s*:\*\*\s*(.+?)(?=\n\*\*|\n\n|\Z)', body_text, re.DOTALL)
+        body_match = re.search(r'\*\*Body\s*:\*\*\s*(.+?)(?=\n\*\*|\n\n|\Z)', body_text, re.DOTALL | re.IGNORECASE)
 
         if h_highlight_match:
             # Format A or B: heading split into before/highlight/after fields
             h_before_match = re.search(r'\*\*(?:Heading )?before:\*\* *(.*)', body_text, re.IGNORECASE)
             h_after_match = re.search(r'\*\*(?:Heading )?after:\*\* *(.*)', body_text, re.IGNORECASE)
-            before_word = h_before_match.group(1).strip() if h_before_match else ''
-            highlight_word = h_highlight_match.group(1).strip()
-            after_word = h_after_match.group(1).strip() if h_after_match else ''
+            before_word = h_before_match.group(1).strip().strip('"') if h_before_match else ''
+            highlight_word = h_highlight_match.group(1).strip().strip('"')
+            after_word = h_after_match.group(1).strip().strip('"') if h_after_match else ''
             body_only = body_match.group(1).strip() if body_match else ''
             _presplit = (before_word, highlight_word, after_word)
         else:
@@ -1184,6 +1187,102 @@ INFOGRAPHIC_INSTRUCTIONS = (
 )
 
 
+def _build_text_only_prompt(platform, category, topic, icp, today):
+    """Build prompt for text-only categories (no slides, no caption sections)."""
+    brand_text, platform_text, icp_text = _load_config_texts(platform, icp)
+    prompt_path = PROMPTS_DIR / platform / f"{category}.md"
+    if not prompt_path.exists():
+        prompt_path = PROMPTS_DIR / "instagram" / f"{category}.md"
+    prompt_text = prompt_path.read_text() if prompt_path.exists() else ""
+
+    return f"""Generate a text-only tweet about: {topic}
+
+Target ICP: {icp}
+
+Brand config:
+---
+{brand_text}
+---
+
+Platform config:
+---
+{platform_text}
+---
+
+ICP profile:
+---
+{icp_text}
+---
+
+Prompt template (follow these rules exactly):
+---
+{prompt_text}
+---
+
+Output ONLY the tweet text. No frontmatter, no markdown headers, no explanation. Just the raw 3-4 lines.
+"""
+
+
+def _run_generation_text_only(job_id, params):
+    """Generate text-only post (no slides, no caption-writer). The text IS the post."""
+    try:
+        platform = params["platform"]
+        category = params["category"]
+        topic = params["topic"]
+        icp = params.get("icp", "solo-builder")
+        slug = _slugify(topic)
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        with job_lock:
+            jobs[job_id]["progress"] = "Generating tweet..."
+
+        prompt = _build_text_only_prompt(platform, category, topic, icp, today)
+        ok, tweet_text, err = _run_claude(prompt, timeout=60)
+
+        if not ok or not tweet_text:
+            with job_lock:
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = err or "Claude CLI failed"
+            return
+
+        # Clean up: strip any frontmatter or markdown headers Claude may have added
+        tweet_text = re.sub(r'^---.*?---\s*', '', tweet_text, flags=re.DOTALL)
+        tweet_text = re.sub(r'^#+\s.*\n', '', tweet_text)
+        tweet_text = tweet_text.strip()
+
+        # Write output markdown
+        output_file = _make_output_file(platform, category, slug)
+        md_text = f"""---
+platform: {platform}
+category: {category}
+topic: {_yaml_quote(topic)}
+icp: {icp}
+date: {today}
+status: draft
+format: text_only
+---
+
+# Value Drop: {topic}
+
+## Caption
+
+{tweet_text}
+"""
+        output_file.write_text(md_text)
+        rel_path = str(output_file.relative_to(OUTPUT_DIR))
+
+        with job_lock:
+            jobs[job_id]["status"] = "complete"
+            jobs[job_id]["progress"] = "Done!"
+            jobs[job_id]["output_path"] = rel_path
+            jobs[job_id]["slug"] = slug
+
+    except Exception as e:
+        with job_lock:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = str(e)
+
+
 def _run_notebooklm_cmd(args, timeout=60):
     """Run a notebooklm CLI command and return (success, stdout, stderr)."""
     result = subprocess.run(
@@ -1495,6 +1594,7 @@ CATEGORY_FIELD_MAP = {
     "infographic": {"fields": ["title", "type"], "example": '{"title": "The Prompt Checklist", "type": "cheat_sheet"}'},
     "user-story": {"fields": ["persona", "problem"], "example": '{"persona": "Solo dev building SaaS", "problem": "Spent 20 min per prompt"}'},
     "daily-prompt": {"fields": ["task"], "example": '{"task": "write a marketing plan"}'},
+    "value-drop": {"fields": ["hook", "angle"], "example": '{"hook": "You don\'t need prompt engineering", "angle": "tool-does-it-for-you"}'},
 }
 
 
@@ -1521,7 +1621,8 @@ def _generate_topic_ideas(platform, category):
 
     field_info = CATEGORY_FIELD_MAP.get(category, {"fields": ["topic"], "example": '{"topic": "example"}'})
 
-    prompt = f"""Generate 6 original, fresh topic ideas for a "{cat_name}" Instagram post.
+    platform_name = pdata.get("name", platform.title())
+    prompt = f"""Generate 6 original, fresh topic ideas for a "{cat_name}" {platform_name} post.
 
 Category description: {cat_description}
 
@@ -1629,8 +1730,10 @@ def api_generate():
             "params": params,
         }
 
-    # Route to instant, infographic, or full generation
-    if category in INSTANT_RENDER_CATEGORIES and (topic_data or category == "daily-prompt"):
+    # Route to instant, text-only, infographic, or full generation
+    if category in TEXT_ONLY_CATEGORIES:
+        target = _run_generation_text_only
+    elif category in INSTANT_RENDER_CATEGORIES and (topic_data or category == "daily-prompt"):
         target = _run_generation_instant
     elif category == "infographic":
         target = _run_generation_infographic

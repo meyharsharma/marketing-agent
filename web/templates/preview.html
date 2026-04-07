@@ -36,6 +36,8 @@
       </div>
       {% endif %}
     </div>
+    {% elif post.frontmatter.format == 'text_only' %}
+    <div class="card" style="aspect-ratio:1; display:flex; align-items:center; padding:2.5rem; background:var(--gray-900); color:var(--gray-50); font-size:1.25rem; line-height:1.8; white-space:pre-line;">{{ post.caption }}</div>
     {% else %}
     <div class="card" style="aspect-ratio:1; display:flex; align-items:center; justify-content:center; color:var(--gray-300);">
       <div class="text-center">

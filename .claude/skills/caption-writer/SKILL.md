@@ -84,10 +84,10 @@ Try it free: https://www.promptoptimizr.com/
 
 ## Hashtags
 
-Always include 5-10 hashtags, in three tiers:
-- 3-5 high-volume (500K+ posts): #artificialintelligence #chatgpt #promptengineering #aitools #machinelearning
-- 1-3 mid-volume (50K-500K): #prompttips #aitips #promptdesign #buildwithAI #solodev
-- 1-2 niche (under 50K): model-specific or topic-specific tags
+Include 3-5 hashtags per post. Never repeat the same set across posts; rotate and tailor each time to the specific topic.
+- Pick from a mix of high-volume and mid-volume tags, but vary the selection every post
+- Example pool (do NOT reuse the same combo): #artificialintelligence #chatgpt #promptengineering #aitools #machinelearning #prompttips #aitips #promptdesign #buildwithAI #solodev
+- Add 1 niche/topic-specific tag when relevant
 
 Format: space-separated on a single line, e.g. `#tag1 #tag2 #tag3`
 
@@ -154,7 +154,7 @@ When writing for platforms other than Instagram, adapt the caption to that platf
 - **Hard limit:** 2200 characters
 - **Hook visibility:** First ~125 characters show before "...more"
 - **Format:** Hook → blank line → Body (1-2 paragraphs) → blank line → Actionable takeaway → blank line → CTA → blank line → Hashtags
-- **Hashtags:** 5-10, space-separated on a single line after the caption
+- **Hashtags:** 3-5, space-separated on a single line after the caption. Rotate every post
 - **Line breaks:** Use blank lines between hook, body, takeaway, and CTA for readability
 
 ### X (Twitter)
